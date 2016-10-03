@@ -43,6 +43,7 @@ void naive_rotate(int dim, pixel *src, pixel *dst)
 
 /*
  * ECE 454 Students: Write your rotate functions here:
+ * comments for this branch
  */ 
 
 /* 
