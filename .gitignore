@@ -1,13 +1,14 @@
-/hw2/nbproject/project.xml
-/hw2/driver_cpe
-/hw2/nbproject/private/Default-exec.log
-/hw2/nbproject/private/launcher.properties
-/hw2/nbproject/private/private.xml
-/hw2/nbproject/configurations.xml
-/hw2/nbproject/private/configurations.xml
-/hw2/nbproject/private/CodeAssistancePathMapper.properties
-/hw2/nbproject/private/Default.properties
-/hw2/nbproject/private/Default-build.log
+# ignore these files
 
-
+# all output files
 *.o
+
+# Webstorm proj conf folder
+.idea
+
+# Netbeans proj conf folder
+/hw2/nbproject/
+
+# compiled files
+/hw2/driver_cpe
+/hw2/make
