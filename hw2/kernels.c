@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "defs.h"
+#define BLOCKSIZE  32
+#define MIN(x, y) ((x < y) ? x : y)
+#define MAX(x, y) ((x > y) ? x : y)
 
 /* 
  * ECE454 Students: 
@@ -54,7 +57,7 @@ char rotate_descr[] = "rotate: Current working version";
 void rotate(int dim, pixel *src, pixel *dst) 
 {
     naive_rotate(dim, src, dst);
-}
+        }	
 
 
 /* 
@@ -63,10 +66,10 @@ char rotate_two_descr[] = "second attempt";
 void attempt_two(int dim, pixel *src, pixel *dst) 
 {
     naive_rotate(dim, src, dst);
-}
+        }   
 */
 
-
+            
 /*********************************************************************
  * register_rotate_functions - Register all of your different versions
  *     of the rotate kernel with the driver by calling the
