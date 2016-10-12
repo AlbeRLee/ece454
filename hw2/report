@@ -1,0 +1,13 @@
+ECE 454 Lab 2 Report
+Taylan Gocmen		1000379949
+Gligor Djogo		1000884206
+
+Explanation of the final implementation of rotate() and why it performs well:
+- Improved mathematical index calculations with LCIM (loop invariant code motion)
+- Moved the calculations out of as many loops as possible reducing unnecessary calculations
+- Reordered loop to traverse the array in row major order, changing the majority of cache misses from write misses to less expensive read misses
+- Used tiling for better cache performance
+- Chose tiling size depending on experimental results to further reduce the cache misses
+- Unrolled the tiling double loop, improving mathematical calculations and allowing the compiler to optimize the register usage
+- Loop unrolling also allows the compiler to optimize better for pipelining hazards and instruction ordering
+
