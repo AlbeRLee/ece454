@@ -24,15 +24,15 @@
  ********************************************************/
 team_t team = {
     /* Team name */
-    "",
+    "Hugh Mungus",
     /* First member's full name */
-    "",
+    "Taylan Gocmen",
     /* First member's email address */
-    "",
+    "taylan.gocmen@mail.utoronto.ca",
     /* Second member's full name (leave blank if none) */
-    "",
+    "Gligor Djogo",
     /* Second member's email address (leave blank if none) */
-    ""
+    "g.djogo@mail.utoronto.ca"
 };
 
 /*************************************************************************
