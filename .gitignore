@@ -1,17 +1,39 @@
-# ignore these files
+# Ignore all
+*
 
-# all output files
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
+
+# OSX
+.DS_Store
+
+# Editor / IDE project files
+nbproject/
+.idea/
+
+# Executables & Compiled files
+*.exe
+*.out
+*.app
 *.o
+*.prog
 
-# Webstorm proj conf folder
-.idea
+# libraries
+*.a
+*.lib
 
-# Netbeans proj conf folder
-/hw2/nbproject/
+# Objects
+*.dll
+*.so
+*.dylib
 
-# compiled files
-/hw2/driver_cpe
-/hw2/make
+# tar files
+*.tgz
 
-#test_files
-/test
+# unuseful log files
+*.log
+
+

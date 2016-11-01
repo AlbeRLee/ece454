@@ -1,2 +1,0 @@
-gcc -Wall -O1 -g   -c -o mm.o mm.c
-gcc -Wall -O1 -g -o mdriver mdriver.o mm.o memlib.o fsecs.o fcyc.o clock.o ftimer.o
