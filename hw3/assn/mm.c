@@ -309,6 +309,7 @@ void place(void* bp, size_t asize)
         // make remaining words into unused block, mark free
         PUT(HDRP(NEXT_BLKP(bp)), PACK(bsize-asize, 0));
         PUT(FTRP(NEXT_BLKP(bp)), PACK(bsize-asize, 0));
+        coalesce(NEXT_BLKP(bp));
     }
     // otherwise there will be internal fragmentation, hopefully negligibly small
     else {
