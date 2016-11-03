@@ -217,10 +217,9 @@ void remove_block(void *block_) {
 
   assert(curr == block_);
 
-  if (prev == NULL){
+  if (prev == NULL) {
     (free_listp[index] = curr);
-  }
-  else{
+  } else {
     (PUT(prev, GET(curr)));
   }
 }
@@ -307,11 +306,11 @@ void *extend_heap(size_t words) {
   if (GET_ALLOC(lastFooter) == 0) {
     size -= GET_SIZE(lastFooter);
   }
-  
+
   if ((bp = mem_sbrk(size)) == (void *) - 1)
     return NULL;
 
-  if(GET_ALLOC(lastFooter) == 0)  {
+  if (GET_ALLOC(lastFooter) == 0) {
     bp = lastFooter - GET_SIZE(lastFooter) + DSIZE;
     remove_block(bp);
     size = (words % 2) ? (words + 1) * WSIZE : words * WSIZE;
@@ -346,13 +345,12 @@ void * find_fit(size_t asize) {
         continue;
       }
 
-      if(curr == free_listp[index]){
+      if (curr == free_listp[index]) {
         (free_listp[index] = (void*) GET(curr));
-      }
-      else{
+      } else {
         (PUT(prev, GET(curr)));
       }
-      
+
       return curr;
     }
     continue;
@@ -428,17 +426,18 @@ void *mm_malloc(size_t size) {
 
   /* No fit found. Get more memory and place the block */
   extendsize = MAX(asize, CHUNKSIZE);
-//  extendsize = asize;
-//  if (size == 112) extendsize = 144; //binary2
-//  if (size == 448) extendsize = 528; //binary1
+  //  extendsize = asize;
+  //  if (size == 112) extendsize = 144; //binary2
+  //  if (size == 448) extendsize = 528; //binary1
 
-  
+
   if ((bp = extend_heap(extendsize / WSIZE)) == NULL)
     return NULL;
   place(bp, asize);
   return bp;
 
 }
+
 /******************************************************************************
  * mm_realloc
  * Implemented simply in terms of mm_malloc and mm_free
@@ -460,15 +459,14 @@ void *mm_realloc(void *ptr, size_t size) {
   size_t prevSize = GET_SIZE(HDRP(PREV_BLKP(ptr)));
   size_t currSize = GET_SIZE(HDRP(ptr));
   size_t nextSize = GET_SIZE(HDRP(NEXT_BLKP(ptr)));
-  
+
   assert(size >= 0);
-  
+
   size_t alignedSize = ALIGN_SIZE(size);
-  
+
   if (alignedSize < currSize) {
     return oldptr;
-  }
-  else if (GET_ALLOC(HDRP(PREV_BLKP(ptr))) == 0 && prevSize + currSize >= alignedSize) {
+  } else if (GET_ALLOC(HDRP(PREV_BLKP(ptr))) == 0 && prevSize + currSize >= alignedSize) {
     alignedSize = currSize + prevSize;
 
     newptr = PREV_BLKP(ptr);
@@ -481,8 +479,7 @@ void *mm_realloc(void *ptr, size_t size) {
     PUT(FTRP(newptr), PACK(alignedSize, 1));
 
     return newptr;
-  }
-  else if (GET_ALLOC(HDRP(NEXT_BLKP(ptr))) == 0 && currSize + nextSize >= alignedSize) {
+  } else if (GET_ALLOC(HDRP(NEXT_BLKP(ptr))) == 0 && currSize + nextSize >= alignedSize) {
     remove_block(NEXT_BLKP(ptr));
 
     alignedSize = currSize + nextSize;
@@ -491,8 +488,7 @@ void *mm_realloc(void *ptr, size_t size) {
     PUT(FTRP(oldptr), PACK(alignedSize, 1));
 
     return oldptr;
-  }
-  else if (GET_ALLOC(HDRP(PREV_BLKP(ptr))) == 0 &&
+  } else if (GET_ALLOC(HDRP(PREV_BLKP(ptr))) == 0 &&
     GET_ALLOC(HDRP(NEXT_BLKP(ptr))) == 0 &&
     prevSize + currSize + nextSize >= alignedSize) {
 
@@ -524,6 +520,7 @@ void *mm_realloc(void *ptr, size_t size) {
   mm_free(oldptr);
   return newptr;
 }
+
 /******************************************************************************
  * mm_check
  * Check the consistency of the memory heap
