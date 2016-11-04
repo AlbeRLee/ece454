@@ -69,7 +69,7 @@ void remove_block_sized(void *bp, size_t size);
  ******************************************************************************/
 #define WSIZE       sizeof(void *)            /* word size (bytes) */
 #define DSIZE       (2 * WSIZE)            /* doubleword size (bytes) */
-#define CHUNKSIZE   (1<<7)      /* initial heap size (bytes) */
+#define CHUNKSIZE   (1<<10)      /* initial heap size (bytes) */
 #define BLOCKSIZE   32
 #define ALIGN_SIZE(s) ((s > (2*DSIZE)) ?(DSIZE * ((s +(2 *DSIZE) -1) /DSIZE)) :(2 *DSIZE))
 
