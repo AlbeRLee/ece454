@@ -65,16 +65,12 @@ team_t team = {
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
 
-
 // new macros to get the next/prev link list pointers of the free list
-#define NEXT_FREE(bp) ((char *)(bp)) //compute addr of next ptr
-#define PREV_FREE(bp) ((char *)(bp) + WSIZE) //compute addr of prev ptr
-#define HEAD_FREE     ((char *)(heap_listp) - DSIZE) //compute addr of head ptr
-#define PUT_P(p,val)  (*(uintptr_t **)(p) = (uintptr_t *)val)
-#define GET_P(p)  (*(uintptr_t **)(p))
-
+#define NEXT_FREE(bp) ((char *)(bp) - 2*WSIZE)
+#define PREV_FREE(bp) ((char *)(bp) - 3*WSIZE)
 
 void* heap_listp = NULL;
+void* free_shortcut = NULL;
 
 /**********************************************************
  * mm_init
@@ -83,74 +79,18 @@ void* heap_listp = NULL;
  **********************************************************/
  int mm_init(void)
  {
-     if ((heap_listp = mem_sbrk(4*WSIZE)) == (void *)-1)
+   if ((heap_listp = mem_sbrk(4*WSIZE)) == (void *)-1)
          return -1;
-     PUT_P(heap_listp, NULL); // head ptr of free list = NULL
-     PUT(heap_listp + (1 * WSIZE), PACK(DSIZE, 1)); // prologue header
-     //zero data
-     PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1)); // prologue footer
-     //future heap data
-     PUT(heap_listp + (3 * WSIZE), PACK(0, 1)); // epilogue header
-     
+     PUT(heap_listp, 0);                         // alignment padding
+     PUT(heap_listp + (1 * WSIZE), PACK(DSIZE, 1));   // prologue header
+     PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1));   // prologue footer
+     PUT(heap_listp + (3 * WSIZE), PACK(0, 1));    // epilogue header
      heap_listp += DSIZE;
+     
+     free_shortcut = heap_listp;
 
      return 0;
  }
-
-
-// Explicit list manipulation functions
-
-void free_list_insert(void* bp) {
-    if (bp == NULL)
-        return;
-    
-    //get appropriate seg list
-    
-    // check if list empty
-    if (GET_P(HEAD_FREE) == NULL) {
-        PUT_P(NEXT_FREE(bp), NULL);
-        PUT_P(PREV_FREE(bp), NULL);
-        PUT_P(HEAD_FREE, bp); // point head to this block
-    }
-    // insert new block at front of existing free list
-    else {
-        PUT_P(NEXT_FREE(bp), GET_P(HEAD_FREE)); // connect to start of list
-        PUT_P(PREV_FREE(bp), NULL); // no prev blocks
-        PUT_P(PREV_FREE(GET_P(HEAD_FREE)), bp); // set second block to point back
-        PUT_P(HEAD_FREE, bp); // point head to this block
-    }
-}
-
-void free_list_remove(void* bp){
-    if (bp == NULL || GET_P(HEAD_FREE) == NULL)
-        return;
-    
-    // remove first item
-    if (GET_P(PREV_FREE(bp)) == NULL) {
-        PUT_P(HEAD_FREE, GET_P(NEXT_FREE(bp))); // connect head to skip this block
-        if (GET_P(HEAD_FREE) != NULL) {
-            PUT_P(PREV_FREE(GET_P(HEAD_FREE)), NULL); // make next block the first block
-            PUT_P(NEXT_FREE(bp), NULL); // disconnect first block's fwd ptr
-        }
-    }
-    // remove last item
-    else if (GET_P(NEXT_FREE(bp)) == NULL) {
-        PUT_P(GET_P(PREV_FREE(bp)), NULL); // disconnect prev block's ptr
-        PUT_P(PREV_FREE(bp), NULL); // disconnect last block's back ptr
-    }
-    // remove middle item
-    else {
-        // connect prev to next via fwd ptr (bypass bp)
-        PUT_P(NEXT_FREE(GET_P(PREV_FREE(bp))), GET_P(NEXT_FREE(bp)));
-        // connect next to prev via back ptr
-        PUT_P(PREV_FREE(GET_P(NEXT_FREE(bp))), GET_P(PREV_FREE(bp)));
-        // disconnect this block from list
-        PUT_P(NEXT_FREE(bp), NULL);
-        PUT_P(PREV_FREE(bp), NULL);
-    }
-}
-
-// End of explicit list fcns
 
 /**********************************************************
  * coalesce
@@ -165,31 +105,33 @@ void *coalesce(void *bp)
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t size = GET_SIZE(HDRP(bp));
+    
+    // check whether the free_shortcut needs to be updated if this newly
+    // freed block comes earlier than what was there before
+    // if this newly freed block is near the beginning of heap, not a good speedup!
+    if (bp < free_shortcut) {
+        free_shortcut = bp;
+    }
 
-    // Case 1 = neighbors allocated, cannot coalesce
-    if (prev_alloc && next_alloc) {
+    if (prev_alloc && next_alloc) {       /* Case 1 */
         return bp;
     }
-    // Case 2 = next block free, coalesce forward, return combined block (not in free list)
-    else if (prev_alloc && !next_alloc) {
-        free_list_remove(NEXT_BLKP(bp)); //remove NEXT
+
+    else if (prev_alloc && !next_alloc) { /* Case 2 */
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
         PUT(HDRP(bp), PACK(size, 0));
         PUT(FTRP(bp), PACK(size, 0));
         return (bp);
     }
-    // Case 3 = prev block free, coalesce backward, return combined block (not in free list)
-    else if (!prev_alloc && next_alloc) { 
-        free_list_remove(PREV_BLKP(bp)); //remove PREV
+
+    else if (!prev_alloc && next_alloc) { /* Case 3 */
         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
         PUT(FTRP(bp), PACK(size, 0));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
         return (PREV_BLKP(bp));
     }
-    // Case 4 = both neighbors free, coalesce all three into single block
-    else {
-        free_list_remove(NEXT_BLKP(bp)); //remove NEXT
-        free_list_remove(PREV_BLKP(bp)); //  and  PREV
+
+    else {            /* Case 4 */
         size += GET_SIZE(HDRP(PREV_BLKP(bp)))  +
             GET_SIZE(FTRP(NEXT_BLKP(bp)))  ;
         PUT(HDRP(PREV_BLKP(bp)), PACK(size,0));
@@ -215,10 +157,11 @@ void *extend_heap(size_t words)
         return NULL;
 
     /* Initialize free block header/footer and the epilogue header */
-    
     PUT(HDRP(bp), PACK(size, 0));                // free block header
     PUT(FTRP(bp), PACK(size, 0));                // free block footer
     PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1));        // new epilogue header
+    
+    // initialize
 
     /* Coalesce if the previous block was free */
     return coalesce(bp);
@@ -231,36 +174,125 @@ void *extend_heap(size_t words)
  * Return NULL if no free blocks can handle that size
  * Assumed that asize is aligned
  **********************************************************/
+void * first_fit(size_t asize);
+void * best_fit(size_t asize);
+void * good_fit(size_t asize);
+void * shortcut_fit(size_t asize);
+
 void * find_fit(size_t asize)
 {
+    return first_fit(asize);
+    //return best_fit(asize); //doesnt improve score, performance too slow
+    //return good_fit(asize); //somehow utilization is worse by 1 point
+    //return shortcut_fit(asize); //basically no effect on score
+}
+// find first block that has over the required capacity
+void * first_fit(size_t asize)
+{
     void *bp;
-    
-    // search only free list; find the first block large enough to fit asize
-    for (bp = GET_P(HEAD_FREE); bp != NULL; bp = GET_P(NEXT_FREE(bp))) {
-        if ( asize <= GET_SIZE(HDRP(bp)) ) {
-            free_list_remove(bp);
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+    {
+        if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp))))
+        {
             return bp;
         }
     }
     return NULL;
-    
-    /*for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+}
+// find smallest block that is still over the required capacity
+void * best_fit(size_t asize)
+{
+    void *bp;
+    void *best_bp = NULL;
+    float best_fit;
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
     {
         if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp))))
         {
-            free_list_remove(bp);
-            return bp;
+            if (best_bp && (GET_SIZE(HDRP(bp))/asize) < best_fit) {
+                best_bp = bp;
+                best_fit = GET_SIZE(HDRP(bp))/asize;
+            }
+            else {
+                best_bp = bp;
+                best_fit = GET_SIZE(HDRP(bp))/asize;
+            }
         }
     }
-    return NULL;*/
+    return best_bp;
+}
+// find a good enough fit for the block, without spending too much time searching
+void * good_fit(size_t asize)
+{
+    void *bp;
+    void *best_bp = NULL;
+    float best_fit;
+    float good_enough_ratio = 2.0;
+    
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+    {
+        if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp))))
+        {
+            // get the best_fit ratio and check if this block is better than previous best
+            if (best_bp && (GET_SIZE(HDRP(bp))/asize) < best_fit) {
+                best_bp = bp;
+                best_fit = GET_SIZE(HDRP(bp))/asize;
+            }
+            else {
+                best_bp = bp;
+                best_fit = GET_SIZE(HDRP(bp))/asize;
+            }
+            // exit right away if this block is good enough
+            if (best_fit <= good_enough_ratio) {
+                break;
+            }
+        }
+    }
+    return best_bp;
+}
+// find a free block quickly, use shortcut pointer and pick best block from first five options
+void * shortcut_fit(size_t asize)
+{
+    void *bp;
+    void *best_bp = NULL;
+    //float best_fit;
+    //float good_enough_ratio = 2.0;
+    //int fit_counter = 0;
+    
+    for (bp = free_shortcut; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+    {
+        if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp))))
+        {
+            best_bp = bp;
+            break;
+            /*
+            // get the best_fit ratio and check if this block is better than previous best
+            if (best_bp && (GET_SIZE(HDRP(bp))/asize) < best_fit) {
+                best_bp = bp;
+                best_fit = GET_SIZE(HDRP(bp))/asize;
+                fit_counter++;
+            }
+            else {
+                best_bp = bp;
+                best_fit = GET_SIZE(HDRP(bp))/asize;
+                fit_counter++;
+            }
+            // exit right away if this block is good enough
+            if (best_fit <= good_enough_ratio || fit_counter > 0) {
+                break;
+            }
+            */
+        }
+    }
+    return best_bp;
 }
 
 /**********************************************************
  * place
  * Mark the block as allocated
- * Split the block if there is sufficient useful space left over
- * and add the new split onto the free list
  **********************************************************/
+void * find_next_free_block(void* start_bp);
+
 void place(void* bp, size_t asize)
 {
     /* Get the current block size */
@@ -268,25 +300,38 @@ void place(void* bp, size_t asize)
     
     // asize is the adjusted block size, includes hdrp ftrp
 
-    // Block Splitting
-    // if there are more than 4 unused words it is considered useful space
-    // (4 = hd + next + prev + ft)
-    if (bsize - asize > 0*WSIZE + DSIZE) {
-        // mark the required words of this block as allocated
+    // BLOCK SPLITTING
+    // if there are more than 5 unused words (6 = char + hd + ft) it is useful space
+    if (bsize > asize + 1*WSIZE + DSIZE) {
+        // mark this block allocated
         PUT(HDRP(bp), PACK(asize, 1));
         PUT(FTRP(bp), PACK(asize, 1));
-        // make the remaining words into an unused block, mark as free
+        // make remaining words into unused block, mark free
         PUT(HDRP(NEXT_BLKP(bp)), PACK(bsize-asize, 0));
         PUT(FTRP(NEXT_BLKP(bp)), PACK(bsize-asize, 0));
-        // coalesce the new split block and then add it to the free list
-        void* free_bp = coalesce(NEXT_BLKP(bp));
-        free_list_insert(free_bp);
+        coalesce(NEXT_BLKP(bp));
     }
     // otherwise there will be internal fragmentation, hopefully negligibly small
     else {
         PUT(HDRP(bp), PACK(bsize, 1));
         PUT(FTRP(bp), PACK(bsize, 1));
     }
+    // update the free_shortcut global variable if needed
+    if (GET_ALLOC(HDRP(free_shortcut))) {
+        free_shortcut = find_next_free_block(free_shortcut);
+    }
+}
+// linear search to find the next free block, else return heap_listp if DNE
+void * find_next_free_block(void* start_bp)
+{
+    void *bp;
+    for (bp = start_bp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+    {
+        if (!GET_ALLOC(HDRP(bp))) {
+            return bp;
+        }
+    }
+    return heap_listp;
 }
 
 /**********************************************************
@@ -295,30 +340,23 @@ void place(void* bp, size_t asize)
  **********************************************************/
 void mm_free(void *bp)
 {
-    if(bp == NULL) {
+    if(bp == NULL){
       return;
     }
-    // mark free bit inside header as 0
     size_t size = GET_SIZE(HDRP(bp));
     PUT(HDRP(bp), PACK(size,0));
     PUT(FTRP(bp), PACK(size,0));
-    
-    // coalesce the newly freed block, avoid external fragmentation
-    void* free_bp = coalesce(bp);
-    
-    // add the newly coalesced free block tot the free list
-    free_list_insert(free_bp);
+    coalesce(bp);
 }
+
 
 /**********************************************************
  * mm_malloc
  * Allocate a block of size bytes.
  * The type of search is determined by find_fit
- *   also block removed from free list
  * The decision of splitting the block, or not is determined
- *   in place(..) and new split is put in free list
+ *   in place(..)
  * If no block satisfies the request, the heap is extended
- *   it's coalesced, and new block is placed into it
  **********************************************************/
 void *mm_malloc(size_t size)
 {
@@ -344,7 +382,6 @@ void *mm_malloc(size_t size)
 
     /* No fit found. Get more memory and place the block */
     // Increase the chunk size to 12, avoid extending heap too often
-    //printf("extend");
     extendsize = MAX(asize, (1<<12));
     if ((bp = extend_heap(extendsize/WSIZE)) == NULL)
         return NULL;
@@ -364,7 +401,7 @@ void *mm_realloc(void *ptr, size_t size)
       mm_free(ptr);
       return NULL;
     }
-    /* If ptr is NULL, then this is just malloc. */
+    /* If oldptr is NULL, then this is just malloc. */
     if (ptr == NULL)
       return (mm_malloc(size));
     
@@ -375,8 +412,9 @@ void *mm_realloc(void *ptr, size_t size)
     
     void *oldptr = ptr;
     void *newptr;
+    size_t copySize = GET_SIZE(HDRP(oldptr));
     
-    //size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(ptr)));
+    //size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(oldptr)));
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(ptr)));
     size_t curr_size = GET_SIZE(HDRP(ptr));
     size_t next_size = GET_SIZE(HDRP(NEXT_BLKP(ptr)));
@@ -388,38 +426,32 @@ void *mm_realloc(void *ptr, size_t size)
     else
         asize = DSIZE * ((size + (DSIZE) + (DSIZE-1))/ DSIZE);
     
-    // check if we are shrinking the memory used, and there is a chance of splitting
-    if (asize == curr_size)
-        return ptr;
-    if (asize < curr_size) {
+    
+    // check if there is a free block after the current one
+    // if there is, then check if it can be coalesced to give the new size
+    if (asize <= curr_size) {
         PUT(HDRP(ptr), PACK(curr_size, 0));
         PUT(FTRP(ptr), PACK(curr_size, 0));
         place(ptr, asize);
         return ptr;
     }
-    // otherwise we need to look for additional memory
-    
-    // check if there is a free block after the current one
-    // if there is, then check if it can be coalesced to give the new size
-    if ( !next_alloc && (asize <= (curr_size + next_size)) ) {
-        free_list_remove(NEXT_BLKP(ptr)); //remove NEXT
-        // mark as free
+    else if (!next_alloc && (asize <= (curr_size + next_size))) {
         PUT(HDRP(ptr), PACK(curr_size + next_size, 0));
         PUT(FTRP(ptr), PACK(curr_size + next_size, 0));
-        // place extended block in new memory, not overwriting old
         place(ptr, asize);
         return ptr;
     }
     
-    // If above fails, need to malloc new block of the appropriate size
+    // otherwise, new realloc size cannot fit, need to malloc new block for it
     // maybe assume that block being realloc once will be so again
-    // give it some extra padding?
+    // give it some extra padding
     //size_t extraSize = size + (size - curr_size);
     newptr = mm_malloc(size);
     if (newptr == NULL)
         return NULL;
-    // Copy the old data
-    size_t copySize = GET_SIZE(HDRP(oldptr));
+    
+    /* Copy the old data. */
+    copySize = GET_SIZE(HDRP(oldptr));
     if (size < copySize)
         copySize = size;
     memcpy(newptr, oldptr, copySize);
@@ -445,4 +477,3 @@ int mm_check(void){
     */
     return 1;
 }
-
