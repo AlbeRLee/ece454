@@ -69,7 +69,7 @@ void remove_block_sized(void *bp, size_t size);
  ******************************************************************************/
 #define WSIZE       sizeof(void *)            /* word size (bytes) */
 #define DSIZE       (2 * WSIZE)            /* doubleword size (bytes) */
-#define CHUNKSIZE   (1<<10)      /* initial heap size (bytes) */
+#define CHUNKSIZE   (1<<8)      /* initial heap size (bytes) */
 #define BLOCKSIZE   32
 #define ALIGN_SIZE(s) ((s > (2*DSIZE)) ?(DSIZE * ((s +(2 *DSIZE) -1) /DSIZE)) :(2 *DSIZE))
 
@@ -165,7 +165,7 @@ void init_freelistp() {
  * 
  ******************************************************************************/
 static inline int list_index(int size) {
-	int index = -1;
+  int index = -1;
 
 	if (size <= 32) {
 		index = 0;
@@ -286,7 +286,6 @@ void *coalesce(void *bp) {
      * Case 1 
      * insert block to into one of the free lists
      */
-//    insert_block(bp);
     return bp;
   } else if (prev_alloc && !next_alloc) {
     /* 
@@ -298,7 +297,6 @@ void *coalesce(void *bp) {
     PUT(HDRP(bp), PACK(size, 0));
     PUT(FTRP(bp), PACK(size, 0));
 
-//    insert_block_sized(bp, size);
     return bp;
   } else if (!prev_alloc && next_alloc) {
     /* 
@@ -310,7 +308,6 @@ void *coalesce(void *bp) {
     PUT(FTRP(bp), PACK(size, 0));
     PUT(HDRP(prev), PACK(size, 0));
 
-//    insert_block_sized(prev, size);
     return prev;
   } else {
     /* 
@@ -323,7 +320,6 @@ void *coalesce(void *bp) {
     PUT(HDRP(prev), PACK(size, 0));
     PUT(FTRP(next), PACK(size, 0));
 
-//    insert_block_sized(prev, size);
     return prev;
   }
 }
