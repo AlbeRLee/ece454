@@ -235,7 +235,7 @@ void insert_block_sized(void *bp, size_t size) {
 void remove_block(void *bp) {
 
   size_t size = GET_SIZE(HDRP(bp));
-  insert_block_sized(bp, size);
+  remove_block_sized(bp, size);
 }
 
 void remove_block_sized(void *bp, size_t size){
