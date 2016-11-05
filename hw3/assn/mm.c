@@ -99,7 +99,11 @@ void init_freelistp();
 static inline int list_index(size_t size);
 void insert_block(void *bp);
 void remove_block(void *bp);
-void remove_block_sized(void *bp, size_t size);
+bool search_list(void* searchB, void* searchL);
+bool search_all_lists(void* searchB);
+bool check_list(void* checkL);
+bool check_all_lists();
+bool check_heap();
 
 /******************************************************************************
  * Basic Constants and Macros
