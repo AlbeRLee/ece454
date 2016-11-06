@@ -7,6 +7,10 @@
 # Unignore all dirs
 !*/
 
+# Unignore make files
+!*MAKEFILE
+!*Makefile
+
 # OSX
 .DS_Store
 
