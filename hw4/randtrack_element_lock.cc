@@ -8,6 +8,8 @@
 #include "hash.h"
 #include "utils.h"
 
+using namespace std;
+
 #define SAMPLES_TO_COLLECT   10000000
 #define RAND_NUM_UPPER_BOUND   100000
 #define NUM_SEED_STREAMS            4
@@ -36,6 +38,7 @@ unsigned samples_to_skip;
 // the element and key value here: element is "class sample" and
 // key value is "unsigned".  
 hash<sample, unsigned> h;
+pthread_mutex_t mutexs[RAND_NUM_UPPER_BOUND];
 
 void *count_samples(void* args_);
 
@@ -63,8 +66,12 @@ int main(int argc, char* argv[]) {
 
   // initialize a 16K-entry (2**14) hash of empty lists
   h.setup(14);
+  for (int j = 0; j < RAND_NUM_UPPER_BOUND; j++) {
+    int ret = pthread_mutex_init(&mutexs[j], NULL);
+    assert(ret == 0);
+  }
 
-  //initialize pthread structure with size num_threads
+  //initialize pthread structure with size num_threads 
   pthread_t* tid = (pthread_t*) malloc(num_threads * sizeof (pthread_t));
   ThreadArgs** targs = (ThreadArgs**) malloc(num_threads * sizeof (ThreadArgs*));
   int num_iterations = NUM_SEED_STREAMS / num_threads;
@@ -74,7 +81,7 @@ int main(int argc, char* argv[]) {
   for (i = 0; i < num_threads; i++) {
     targs[i] = new ThreadArgs(i, num_iterations);
     pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
-  }
+        }
 
   for (i = 0; i < num_threads; i++) {
     pthread_join(tid[i], NULL);
@@ -110,6 +117,9 @@ void *count_samples(void* args_) {
       // force the sample to be within the range of 0..RAND_NUM_UPPER_BOUND-1
       key = rnum % RAND_NUM_UPPER_BOUND;
 
+/********************* Beginning of the critical section *********************/
+      pthread_mutex_lock(&mutexs[key]);
+
       // if this sample has not been counted before
       if (!(s = h.lookup(key))) {
 
@@ -120,6 +130,9 @@ void *count_samples(void* args_) {
 
       // increment the count for the sample
       s->count++;
+
+      pthread_mutex_unlock(&mutexs[key]);
+/************************ End of the critical section ************************/
     }
   }
 }

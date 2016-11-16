@@ -8,6 +8,8 @@
 #include "hash.h"
 #include "utils.h"
 
+using namespace std;
+
 #define SAMPLES_TO_COLLECT   10000000
 #define RAND_NUM_UPPER_BOUND   100000
 #define NUM_SEED_STREAMS            4
@@ -113,7 +115,9 @@ void *count_samples(void* args_) {
       // force the sample to be within the range of 0..RAND_NUM_UPPER_BOUND-1
       key = rnum % RAND_NUM_UPPER_BOUND;
 
+/********************* Beginning of the critical section *********************/
       pthread_mutex_lock(&mutex);
+      
       // if this sample has not been counted before
       if (!(s = h.lookup(key))) {
 
@@ -124,7 +128,9 @@ void *count_samples(void* args_) {
 
       // increment the count for the sample
       s->count++;
+      
       pthread_mutex_unlock(&mutex);
+/************************ End of the critical section ************************/
     }
   }
 }

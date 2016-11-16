@@ -8,6 +8,8 @@
 #include "hash.h"
 #include "utils.h"
 
+using namespace std;
+
 #define SAMPLES_TO_COLLECT   10000000
 #define RAND_NUM_UPPER_BOUND   100000
 #define NUM_SEED_STREAMS            4
@@ -64,7 +66,7 @@ int main(int argc, char* argv[]) {
   // initialize a 16K-entry (2**14) hash of empty lists
   h.setup(14);
 
-  //initialize pthread structure with size num_threads
+  //initialize pthread structure with size num_threads 
   pthread_t* tid = (pthread_t*) malloc(num_threads * sizeof (pthread_t));
   ThreadArgs** targs = (ThreadArgs**) malloc(num_threads * sizeof (ThreadArgs*));
   int num_iterations = NUM_SEED_STREAMS / num_threads;
@@ -74,7 +76,7 @@ int main(int argc, char* argv[]) {
   for (i = 0; i < num_threads; i++) {
     targs[i] = new ThreadArgs(i, num_iterations);
     pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
-  }
+        }
 
   for (i = 0; i < num_threads; i++) {
     pthread_join(tid[i], NULL);
@@ -110,16 +112,21 @@ void *count_samples(void* args_) {
       // force the sample to be within the range of 0..RAND_NUM_UPPER_BOUND-1
       key = rnum % RAND_NUM_UPPER_BOUND;
 
-      // if this sample has not been counted before
-      if (!(s = h.lookup(key))) {
+/********************* Beginning of the critical section *********************/
+      __transaction_atomic{
 
-        // insert a new element for it into the hash table
-        s = new sample(key);
-        h.insert(s);
+        // if this sample has not been counted before
+        if (!(s = h.lookup(key))) {
+
+          // insert a new element for it into the hash table
+          s = new sample(key);
+          h.insert(s);
+        }
+
+        // increment the count for the sample
+        s->count++;
       }
-
-      // increment the count for the sample
-      s->count++;
+/************************ End of the critical section ************************/
     }
   }
 }

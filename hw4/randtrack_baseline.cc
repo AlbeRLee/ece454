@@ -8,6 +8,8 @@
 #include "hash.h"
 #include "utils.h"
 
+using namespace std;
+
 #define SAMPLES_TO_COLLECT   10000000
 #define RAND_NUM_UPPER_BOUND   100000
 #define NUM_SEED_STREAMS            4
