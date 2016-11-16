@@ -1,5 +1,5 @@
 
-CC = g++-4.9
+CC = g++-4.9.2
 CFLAGS = -O3 -lpthread
 TMFLAGS = -O3 -lpthread -fgnu-tm
 

@@ -1,9 +1,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
+#include <assert.h>
 
 #include "defs.h"
 #include "hash.h"
+#include "utils.h"
 
 #define SAMPLES_TO_COLLECT   10000000
 #define RAND_NUM_UPPER_BOUND   100000
@@ -28,40 +31,16 @@ team_t team = {
 unsigned num_threads;
 unsigned samples_to_skip;
 
-class sample;
-
-class sample {
-  unsigned my_key;
-public:
-  sample *next;
-  unsigned count;
-
-  sample(unsigned the_key) {
-    my_key = the_key;
-    count = 0;
-  };
-
-  unsigned key() {
-    return my_key;
-  }
-
-  void print(FILE *f) {
-    printf("%d %d\n", my_key, count);
-  }
-};
-
 // This instantiates an empty hash table
 // it is a C++ template, which means we define the types for
 // the element and key value here: element is "class sample" and
 // key value is "unsigned".  
 hash<sample, unsigned> h;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int
-main(int argc, char* argv[]) {
-  int i, j, k;
-  int rnum;
-  unsigned key;
-  sample *s;
+void *count_samples(void* args_);
+
+int main(int argc, char* argv[]) {
 
   // Print out team information
   printf("Team Name: %s\n", team.team);
@@ -86,8 +65,41 @@ main(int argc, char* argv[]) {
   // initialize a 16K-entry (2**14) hash of empty lists
   h.setup(14);
 
+  //initialize pthread structure with size num_threads
+  int ret = pthread_mutex_init(&mutex, NULL);
+  assert(ret == 0);
+  pthread_t* tid = (pthread_t*) malloc(num_threads * sizeof (pthread_t));
+  ThreadArgs** targs = (ThreadArgs**) malloc(num_threads * sizeof (ThreadArgs*));
+  int num_iterations = NUM_SEED_STREAMS / num_threads;
+  int i;
+
   // process streams starting with different initial numbers
-  for (i = 0; i < NUM_SEED_STREAMS; i++) {
+  for (i = 0; i < num_threads; i++) {
+    targs[i] = new ThreadArgs(i, num_iterations);
+    pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
+  }
+
+  for (i = 0; i < num_threads; i++) {
+    pthread_join(tid[i], NULL);
+    free(targs[i]);
+  }
+
+  // print a list of the frequency of all samples
+  h.print();
+  free(tid);
+  free(targs);
+}
+
+void *count_samples(void* args_) {
+  int i, j, k;
+  int rnum;
+  unsigned key;
+  sample *s;
+
+  ThreadArgs* args = (ThreadArgs*) args_;
+
+  // process streams starting with different initial numbers
+  for (i = args.index; i < args.endex; i++) {
     rnum = i;
 
     // collect a number of samples
@@ -101,6 +113,7 @@ main(int argc, char* argv[]) {
       // force the sample to be within the range of 0..RAND_NUM_UPPER_BOUND-1
       key = rnum % RAND_NUM_UPPER_BOUND;
 
+      pthread_mutex_lock(&mutex);
       // if this sample has not been counted before
       if (!(s = h.lookup(key))) {
 
@@ -111,9 +124,7 @@ main(int argc, char* argv[]) {
 
       // increment the count for the sample
       s->count++;
+      pthread_mutex_unlock(&mutex);
     }
   }
-
-  // print a list of the frequency of all samples
-  h.print();
 }

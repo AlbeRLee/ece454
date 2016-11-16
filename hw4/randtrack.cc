@@ -56,8 +56,7 @@ public:
 // key value is "unsigned".  
 hash<sample, unsigned> h;
 
-int
-main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   int i, j, k;
   int rnum;
   unsigned key;
