@@ -42,11 +42,21 @@ public:
   int index;
   int itrns;
   int endex;
+  
+  hash<sample, unsigned>* h;
 
   ThreadArgs(int index_, int itrns_){
     index = index_;
     itrns = itrns_;
     endex = index_ + itrns_;
+    h = NULL;
+  }
+  
+  ThreadArgs(int index_, int itrns_, hash<sample, unsigned>* h_){
+    index = index_;
+    itrns = itrns_;
+    endex = index_ + itrns_;
+    h = h_;
   }
 };
 
