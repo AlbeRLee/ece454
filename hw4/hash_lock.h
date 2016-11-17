@@ -11,8 +11,8 @@
  * Created on November 16, 2016, 11:22 PM
  */
 
-#ifndef HASH_LIST_LOCK_H
-#define HASH_LIST_LOCK_H
+#ifndef HASH_LOCK_H
+#define HASH_LOCK_H
 
 #ifndef HASH_H
 #define HASH_H
@@ -90,5 +90,5 @@ template<class Ele, class Keytype> void hash<Ele, Keytype>::insert(Ele *e) {
 
 #endif
 
-#endif /* HASH_LIST_LOCK_H */
+#endif /* HASH_LOCK_H */
 
