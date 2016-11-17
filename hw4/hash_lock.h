@@ -1,16 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/* 
- * File:   hash_list_lock.h
- * Author: gocmenta
- *
- * Created on November 16, 2016, 11:22 PM
- */
-
 #ifndef HASH_LOCK_H
 #define HASH_LOCK_H
 
@@ -18,6 +5,7 @@
 #define HASH_H
 
 #include <stdio.h>
+#include <pthread.h>
 #include "list.h"
 
 #define HASH_INDEX(_addr,_size_mask) (((_addr) >> 2) & (_size_mask))
@@ -31,6 +19,7 @@ private:
   unsigned my_size_mask;
   list<Ele, Keytype> *entries;
   list<Ele, Keytype> *get_list(unsigned the_idx);
+  pthread_mutex_t *mutexs;
 
 public:
   void setup(unsigned the_size_log = 5);
@@ -39,6 +28,8 @@ public:
   void print(FILE *f = stdout);
   void reset();
   void cleanup();
+  int lock(Keytype the_key);
+  int unlock(Keytype the_key);
 };
 
 template<class Ele, class Keytype> void hash<Ele, Keytype>::setup(unsigned the_size_log) {
@@ -46,6 +37,10 @@ template<class Ele, class Keytype> void hash<Ele, Keytype>::setup(unsigned the_s
   my_size = 1 << my_size_log;
   my_size_mask = (1 << my_size_log) - 1;
   entries = new list<Ele, Keytype>[my_size];
+  mutexs = new pthread_mutex_t[my_size];
+  for (int i = 0; i < my_size; i++) {
+    pthread_mutex_init(&mutexs[i], NULL);
+  }
 }
 
 template<class Ele, class Keytype> list<Ele, Keytype> *hash<Ele, Keytype>::get_list(unsigned the_idx) {
@@ -82,10 +77,19 @@ template<class Ele, class Keytype> void hash<Ele, Keytype>::cleanup() {
   unsigned i;
   reset();
   delete [] entries;
+  delete [] mutexs;
 }
 
 template<class Ele, class Keytype> void hash<Ele, Keytype>::insert(Ele *e) {
   entries[HASH_INDEX(e->key(), my_size_mask)].push(e);
+}
+
+template<class Ele, class Keytype> int hash<Ele, Keytype>::lock(Keytype the_key) {
+  return pthread_mutex_lock(&mutexs[HASH_INDEX(the_key, my_size_mask)]);
+}
+
+template<class Ele, class Keytype> int hash<Ele, Keytype>::unlock(Keytype the_key) {
+  return pthread_mutex_unlock(&mutexs[HASH_INDEX(the_key, my_size_mask)]);
 }
 
 #endif

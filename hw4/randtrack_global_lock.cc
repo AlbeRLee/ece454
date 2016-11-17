@@ -70,26 +70,26 @@ int main(int argc, char* argv[]) {
   //initialize pthread structure with size num_threads
   int ret = pthread_mutex_init(&mutex, NULL);
   assert(ret == 0);
-  pthread_t* tid = (pthread_t*) malloc(num_threads * sizeof (pthread_t));
-  ThreadArgs** targs = (ThreadArgs**) malloc(num_threads * sizeof (ThreadArgs*));
+  pthread_t* tid = new pthread_t[num_threads];
+  ThreadArgs** targs = new ThreadArgs*[num_threads];
   int num_iterations = NUM_SEED_STREAMS / num_threads;
   int i;
 
   // process streams starting with different initial numbers
   for (i = 0; i < num_threads; i++) {
-    targs[i] = new ThreadArgs((i*num_iterations), num_iterations);
+    targs[i] = new ThreadArgs((i * num_iterations), num_iterations);
     pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
   }
 
   for (i = 0; i < num_threads; i++) {
     pthread_join(tid[i], NULL);
-    free(targs[i]);
+    delete targs[i];
   }
 
   // print a list of the frequency of all samples
   h.print();
-  free(tid);
-  free(targs);
+  delete [] tid;
+  delete [] targs;
 }
 
 void *count_samples(void* args_) {
@@ -115,9 +115,9 @@ void *count_samples(void* args_) {
       // force the sample to be within the range of 0..RAND_NUM_UPPER_BOUND-1
       key = rnum % RAND_NUM_UPPER_BOUND;
 
-/********************* Beginning of the critical section *********************/
+      /********************* Beginning of the critical section *********************/
       pthread_mutex_lock(&mutex);
-      
+
       // if this sample has not been counted before
       if (!(s = h.lookup(key))) {
 
@@ -128,9 +128,9 @@ void *count_samples(void* args_) {
 
       // increment the count for the sample
       s->count++;
-      
+
       pthread_mutex_unlock(&mutex);
-/************************ End of the critical section ************************/
+      /************************ End of the critical section ************************/
     }
   }
 }

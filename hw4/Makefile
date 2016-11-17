@@ -11,13 +11,13 @@ randtrack: list.h hash.h defs.h randtrack.cc
 randtrack_basic: list.h hash.h defs.h randtrack_basic.cc
 	$(CC) $(CFLAGS) randtrack_basic.cc -o randtrack_basic
 
-randtrack_element_lock: list.h hash.h defs.h randtrack_element_lock.cc
+randtrack_element_lock: list.h hash_lock.h defs.h randtrack_element_lock.cc
 	$(CC) $(CFLAGS) randtrack_element_lock.cc -o randtrack_element_lock
 
 randtrack_global_lock: list.h hash.h defs.h randtrack_global_lock.cc
 	$(CC) $(CFLAGS) randtrack_global_lock.cc -o randtrack_global_lock
 
-randtrack_list_lock: list.h hash.h defs.h randtrack_list_lock.cc
+randtrack_list_lock: list.h hash_lock.h defs.h randtrack_list_lock.cc
 	$(CC) $(CFLAGS) randtrack_list_lock.cc -o randtrack_list_lock
 
 randtrack_reduction: list.h hash.h defs.h randtrack_reduction.cc

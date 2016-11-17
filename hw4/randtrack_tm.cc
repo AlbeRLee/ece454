@@ -67,8 +67,8 @@ int main(int argc, char* argv[]) {
   h.setup(14);
 
   //initialize pthread structure with size num_threads 
-  pthread_t* tid = (pthread_t*) malloc(num_threads * sizeof (pthread_t));
-  ThreadArgs** targs = (ThreadArgs**) malloc(num_threads * sizeof (ThreadArgs*));
+  pthread_t* tid = new pthread_t[num_threads];
+  ThreadArgs** targs = new ThreadArgs*[num_threads];
   int num_iterations = NUM_SEED_STREAMS / num_threads;
   int i;
 
@@ -80,13 +80,13 @@ int main(int argc, char* argv[]) {
 
   for (i = 0; i < num_threads; i++) {
     pthread_join(tid[i], NULL);
-    free(targs[i]);
+    delete targs[i];
   }
 
   // print a list of the frequency of all samples
   h.print();
-  free(tid);
-  free(targs);
+  delete [] tid;
+  delete [] targs;
 }
 
 void *count_samples(void* args_) {
@@ -112,7 +112,7 @@ void *count_samples(void* args_) {
       // force the sample to be within the range of 0..RAND_NUM_UPPER_BOUND-1
       key = rnum % RAND_NUM_UPPER_BOUND;
 
-/********************* Beginning of the critical section *********************/
+      /********************* Beginning of the critical section *********************/
       __transaction_atomic{
 
         // if this sample has not been counted before
@@ -126,7 +126,7 @@ void *count_samples(void* args_) {
         // increment the count for the sample
         s->count++;
       }
-/************************ End of the critical section ************************/
+      /************************ End of the critical section ************************/
     }
   }
 }
