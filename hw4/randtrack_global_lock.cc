@@ -23,7 +23,7 @@ team_t team = {
 
   "Taylan Gocmen", /* First member full name */
   "1000379949", /* First member student number */
-  "taylan.gocmen@mail.utoronto.ca, /* First member email address */
+  "taylan.gocmen@mail.utoronto.ca", /* First member email address */
 
   "Gligor Djogo", /* Second member full name */
   "1000884206", /* Second member student number */
@@ -101,7 +101,7 @@ void *count_samples(void* args_) {
   ThreadArgs* args = (ThreadArgs*) args_;
 
   // process streams starting with different initial numbers
-  for (i = args.index; i < args.endex; i++) {
+  for (i = args->index; i < args->endex; i++) {
     rnum = i;
 
     // collect a number of samples
