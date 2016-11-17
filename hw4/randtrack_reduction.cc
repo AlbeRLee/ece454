@@ -3,10 +3,13 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <assert.h>
+#include <vector>
 
 #include "defs.h"
 #include "hash.h"
 #include "utils.h"
+
+using namespace std;
 
 #define SAMPLES_TO_COLLECT   10000000
 #define RAND_NUM_UPPER_BOUND   100000
@@ -21,7 +24,7 @@ team_t team = {
 
   "Taylan Gocmen", /* First member full name */
   "1000379949", /* First member student number */
-  "taylan.gocmen@mail.utoronto.ca, /* First member email address */
+  "taylan.gocmen@mail.utoronto.ca", /* First member email address */
 
   "Gligor Djogo", /* Second member full name */
   "1000884206", /* Second member student number */
@@ -64,15 +67,21 @@ int main(int argc, char* argv[]) {
   // initialize a 16K-entry (2**14) hash of empty lists
   h.setup(14);
 
-  //initialize pthread structure with size num_threads
+  //initialize pthread structure with size num_threads 
   pthread_t* tid = (pthread_t*) malloc(num_threads * sizeof (pthread_t));
   ThreadArgs** targs = (ThreadArgs**) malloc(num_threads * sizeof (ThreadArgs*));
+  hash<sample, unsigned>** thashs =
+    (hash<sample, unsigned>**) malloc(num_threads * sizeof (hash<sample, unsigned>*));
+
   int num_iterations = NUM_SEED_STREAMS / num_threads;
-  int i;
+  int i, j;
+  sample* ts, s;
 
   // process streams starting with different initial numbers
   for (i = 0; i < num_threads; i++) {
-    targs[i] = new ThreadArgs(i, num_iterations);
+    thashs[i] = new hash<sample, unsigned>;
+    thashs[i]->setup(14);
+    targs[i] = new ThreadArgs(i, num_iterations, thashs[i]);
     pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
   }
 
@@ -81,10 +90,31 @@ int main(int argc, char* argv[]) {
     free(targs[i]);
   }
 
+  for (i = 0; i < num_threads; i++) {
+    for (j = 0; j < RAND_NUM_UPPER_BOUND; j++){
+      ts = thashs[i]->lookup(j);
+      s = h.lookup(j);
+
+      if(ts != NULL){
+        if(s == NULL){
+          s = new sample(j);
+          h.insert(s);
+        }
+        s->count += ts->count;
+      }
+
+      ts = NULL;
+      s = NULL;
+    }
+
+    free(thashs[i]);
+  }
+  
   // print a list of the frequency of all samples
   h.print();
   free(tid);
   free(targs);
+  free(thashs);
 }
 
 void *count_samples(void* args_) {
@@ -96,7 +126,7 @@ void *count_samples(void* args_) {
   ThreadArgs* args = (ThreadArgs*) args_;
 
   // process streams starting with different initial numbers
-  for (i = args.index; i < args.endex; i++) {
+  for (i = args->index; i < args->endex; i++) {
     rnum = i;
 
     // collect a number of samples
@@ -110,16 +140,19 @@ void *count_samples(void* args_) {
       // force the sample to be within the range of 0..RAND_NUM_UPPER_BOUND-1
       key = rnum % RAND_NUM_UPPER_BOUND;
 
+/********************* Beginning of the critical section *********************/
+
       // if this sample has not been counted before
-      if (!(s = h.lookup(key))) {
+      if (!(s = args->h->lookup(key))) {
 
         // insert a new element for it into the hash table
         s = new sample(key);
-        h.insert(s);
+        args->h->insert(s);
       }
 
       // increment the count for the sample
       s->count++;
+/************************ End of the critical section ************************/
     }
   }
 }
