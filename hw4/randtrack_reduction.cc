@@ -75,13 +75,14 @@ int main(int argc, char* argv[]) {
 
   int num_iterations = NUM_SEED_STREAMS / num_threads;
   int i, j;
-  sample* ts, s;
+  sample* ts;
+  sample* s;
 
   // process streams starting with different initial numbers
   for (i = 0; i < num_threads; i++) {
     thashs[i] = new hash<sample, unsigned>;
     thashs[i]->setup(14);
-    targs[i] = new ThreadArgs(i, num_iterations, thashs[i]);
+    targs[i] = new ThreadArgs((i*num_iterations), num_iterations, thashs[i]);
     pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
   }
 

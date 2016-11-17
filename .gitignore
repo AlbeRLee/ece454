@@ -41,7 +41,8 @@ nbproject/
 # unuseful log files
 *.log
 
-#hw1 specific files
-
+#hw specific files
+hw4/test.sh
+hw4/.times
 
 

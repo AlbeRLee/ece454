@@ -37,6 +37,9 @@ public:
   }
 };
 
+
+class ThreadArgs;
+
 class ThreadArgs{
 public:
   int index;

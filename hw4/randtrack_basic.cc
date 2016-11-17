@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 
   // process streams starting with different initial numbers
   for (i = 0; i < num_threads; i++) {
-    targs[i] = new ThreadArgs(i, num_iterations);
+    targs[i] = new ThreadArgs((i*num_iterations), num_iterations);
     pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
   }
 
