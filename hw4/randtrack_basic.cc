@@ -67,26 +67,26 @@ int main(int argc, char* argv[]) {
   h.setup(14);
 
   //initialize pthread structure with size num_threads
-  pthread_t* tid = (pthread_t*) malloc(num_threads * sizeof (pthread_t));
-  ThreadArgs** targs = (ThreadArgs**) malloc(num_threads * sizeof (ThreadArgs*));
+  pthread_t* tid = new pthread_t[num_threads];
+  ThreadArgs** targs = new ThreadArgs*[num_threads];
   int num_iterations = NUM_SEED_STREAMS / num_threads;
   int i;
 
   // process streams starting with different initial numbers
   for (i = 0; i < num_threads; i++) {
-    targs[i] = new ThreadArgs((i*num_iterations), num_iterations);
+    targs[i] = new ThreadArgs((i * num_iterations), num_iterations);
     pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
   }
 
   for (i = 0; i < num_threads; i++) {
     pthread_join(tid[i], NULL);
-    free(targs[i]);
+    delete targs[i];
   }
 
   // print a list of the frequency of all samples
   h.print();
-  free(tid);
-  free(targs);
+  delete [] tid;
+  delete [] targs;
 }
 
 void *count_samples(void* args_) {

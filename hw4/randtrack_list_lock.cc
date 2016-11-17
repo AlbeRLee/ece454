@@ -5,7 +5,7 @@
 #include <assert.h>
 
 #include "defs.h"
-#include "hash.h"
+#include "hash_lock.h"
 #include "utils.h"
 
 using namespace std;
@@ -13,7 +13,6 @@ using namespace std;
 #define SAMPLES_TO_COLLECT   10000000
 #define RAND_NUM_UPPER_BOUND   100000
 #define NUM_SEED_STREAMS            4
-#define NUM_MUTEX_LOCKS         16384
 
 /* 
  * ECE454 Students: 
@@ -39,7 +38,6 @@ unsigned samples_to_skip;
 // the element and key value here: element is "class sample" and
 // key value is "unsigned".  
 hash<sample, unsigned> h;
-pthread_mutex_t mutexs[NUM_MUTEX_LOCKS];
 
 void *count_samples(void* args_);
 
@@ -67,32 +65,28 @@ int main(int argc, char* argv[]) {
 
   // initialize a 16K-entry (2**14) hash of empty lists
   h.setup(14);
-  for (int j = 0; j < NUM_MUTEX_LOCKS; j++) {
-    int ret = pthread_mutex_init(&mutexs[j], NULL);
-    assert(ret == 0);
-  }
 
   //initialize pthread structure with size num_threads 
-  pthread_t* tid = (pthread_t*) malloc(num_threads * sizeof (pthread_t));
-  ThreadArgs** targs = (ThreadArgs**) malloc(num_threads * sizeof (ThreadArgs*));
+  pthread_t* tid = new pthread_t[num_threads];
+  ThreadArgs** targs = new ThreadArgs*[num_threads];
   int num_iterations = NUM_SEED_STREAMS / num_threads;
   int i;
 
   // process streams starting with different initial numbers
   for (i = 0; i < num_threads; i++) {
-    targs[i] = new ThreadArgs((i*num_iterations), num_iterations);
+    targs[i] = new ThreadArgs((i * num_iterations), num_iterations);
     pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
   }
 
   for (i = 0; i < num_threads; i++) {
     pthread_join(tid[i], NULL);
-    free(targs[i]);
+    delete targs[i];
   }
 
   // print a list of the frequency of all samples
   h.print();
-  free(tid);
-  free(targs);
+  delete [] tid;
+  delete [] targs;
 }
 
 void *count_samples(void* args_) {
@@ -118,10 +112,8 @@ void *count_samples(void* args_) {
       // force the sample to be within the range of 0..RAND_NUM_UPPER_BOUND-1
       key = rnum % RAND_NUM_UPPER_BOUND;
 
-      int index = HASH_INDEX(key, (NUM_MUTEX_LOCKS-1));
-
-/********************* Beginning of the critical section *********************/
-      pthread_mutex_lock(&mutexs[index]);
+      /********************* Beginning of the critical section *********************/
+      h.lock(key);
 
       // if this sample has not been counted before
       if (!(s = h.lookup(key))) {
@@ -134,8 +126,8 @@ void *count_samples(void* args_) {
       // increment the count for the sample
       s->count++;
 
-      pthread_mutex_unlock(&mutexs[index]);
-/************************ End of the critical section ************************/
+      h.unlock(key);
+      /************************ End of the critical section ************************/
     }
   }
 }

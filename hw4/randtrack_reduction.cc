@@ -68,10 +68,9 @@ int main(int argc, char* argv[]) {
   h.setup(14);
 
   //initialize pthread structure with size num_threads 
-  pthread_t* tid = (pthread_t*) malloc(num_threads * sizeof (pthread_t));
-  ThreadArgs** targs = (ThreadArgs**) malloc(num_threads * sizeof (ThreadArgs*));
-  hash<sample, unsigned>** thashs =
-    (hash<sample, unsigned>**) malloc(num_threads * sizeof (hash<sample, unsigned>*));
+  pthread_t* tid = new pthread_t[num_threads];
+  ThreadArgs** targs = new ThreadArgs*[num_threads];
+  hash<sample, unsigned>** thashs = new hash<sample, unsigned>*[num_threads];
 
   int num_iterations = NUM_SEED_STREAMS / num_threads;
   int i, j;
@@ -82,22 +81,22 @@ int main(int argc, char* argv[]) {
   for (i = 0; i < num_threads; i++) {
     thashs[i] = new hash<sample, unsigned>;
     thashs[i]->setup(14);
-    targs[i] = new ThreadArgs((i*num_iterations), num_iterations, thashs[i]);
+    targs[i] = new ThreadArgs((i * num_iterations), num_iterations, thashs[i]);
     pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
   }
 
   for (i = 0; i < num_threads; i++) {
     pthread_join(tid[i], NULL);
-    free(targs[i]);
+    delete targs[i];
   }
 
   for (i = 0; i < num_threads; i++) {
-    for (j = 0; j < RAND_NUM_UPPER_BOUND; j++){
+    for (j = 0; j < RAND_NUM_UPPER_BOUND; j++) {
       ts = thashs[i]->lookup(j);
       s = h.lookup(j);
 
-      if(ts != NULL){
-        if(s == NULL){
+      if (ts != NULL) {
+        if (s == NULL) {
           s = new sample(j);
           h.insert(s);
         }
@@ -108,14 +107,14 @@ int main(int argc, char* argv[]) {
       s = NULL;
     }
 
-    free(thashs[i]);
+    delete thashs[i];
   }
-  
+
   // print a list of the frequency of all samples
   h.print();
-  free(tid);
-  free(targs);
-  free(thashs);
+  delete [] tid;
+  delete [] targs;
+  delete [] thashs;
 }
 
 void *count_samples(void* args_) {
@@ -141,7 +140,7 @@ void *count_samples(void* args_) {
       // force the sample to be within the range of 0..RAND_NUM_UPPER_BOUND-1
       key = rnum % RAND_NUM_UPPER_BOUND;
 
-/********************* Beginning of the critical section *********************/
+      /********************* Beginning of the critical section *********************/
 
       // if this sample has not been counted before
       if (!(s = args->h->lookup(key))) {
@@ -153,7 +152,7 @@ void *count_samples(void* args_) {
 
       // increment the count for the sample
       s->count++;
-/************************ End of the critical section ************************/
+      /************************ End of the critical section ************************/
     }
   }
 }
