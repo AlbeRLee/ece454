@@ -43,6 +43,8 @@ nbproject/
 
 #hw specific files
 hw4/test.sh
+hw4/test_100.sh
 hw4/.times
+hw4/.times_100
 
 
