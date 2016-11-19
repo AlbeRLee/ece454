@@ -1,18 +1,15 @@
 #ifndef HASH_LOCK_H
 #define HASH_LOCK_H
 
-#ifndef HASH_H
-#define HASH_H
-
 #include <stdio.h>
 #include <pthread.h>
 #include "list.h"
 
 #define HASH_INDEX(_addr,_size_mask) (((_addr) >> 2) & (_size_mask))
 
-template<class Ele, class Keytype> class hash;
+template<class Ele, class Keytype> class hash_lock;
 
-template<class Ele, class Keytype> class hash {
+template<class Ele, class Keytype> class hash_lock {
 private:
   unsigned my_size_log;
   unsigned my_size;
@@ -32,7 +29,7 @@ public:
   int unlock(Keytype the_key);
 };
 
-template<class Ele, class Keytype> void hash<Ele, Keytype>::setup(unsigned the_size_log) {
+template<class Ele, class Keytype> void hash_lock<Ele, Keytype>::setup(unsigned the_size_log) {
   my_size_log = the_size_log;
   my_size = 1 << my_size_log;
   my_size_mask = (1 << my_size_log) - 1;
@@ -43,22 +40,22 @@ template<class Ele, class Keytype> void hash<Ele, Keytype>::setup(unsigned the_s
   }
 }
 
-template<class Ele, class Keytype> list<Ele, Keytype> *hash<Ele, Keytype>::get_list(unsigned the_idx) {
+template<class Ele, class Keytype> list<Ele, Keytype> *hash_lock<Ele, Keytype>::get_list(unsigned the_idx) {
   if (the_idx >= my_size) {
-    fprintf(stderr, "hash<Ele,Keytype>::list() public idx out of range!\n");
+    fprintf(stderr, "hash_lock<Ele,Keytype>::list() public idx out of range!\n");
     exit(1);
   }
   return &entries[the_idx];
 }
 
-template<class Ele, class Keytype> Ele *hash<Ele, Keytype>::lookup(Keytype the_key) {
+template<class Ele, class Keytype> Ele *hash_lock<Ele, Keytype>::lookup(Keytype the_key) {
   list<Ele, Keytype> *l;
 
   l = &entries[HASH_INDEX(the_key, my_size_mask)];
   return l->lookup(the_key);
 }
 
-template<class Ele, class Keytype> void hash<Ele, Keytype>::print(FILE *f) {
+template<class Ele, class Keytype> void hash_lock<Ele, Keytype>::print(FILE *f) {
   unsigned i;
 
   for (i = 0; i < my_size; i++) {
@@ -66,33 +63,30 @@ template<class Ele, class Keytype> void hash<Ele, Keytype>::print(FILE *f) {
   }
 }
 
-template<class Ele, class Keytype> void hash<Ele, Keytype>::reset() {
+template<class Ele, class Keytype> void hash_lock<Ele, Keytype>::reset() {
   unsigned i;
   for (i = 0; i < my_size; i++) {
     entries[i].cleanup();
   }
 }
 
-template<class Ele, class Keytype> void hash<Ele, Keytype>::cleanup() {
-  unsigned i;
+template<class Ele, class Keytype> void hash_lock<Ele, Keytype>::cleanup() {
   reset();
   delete [] entries;
   delete [] mutexs;
 }
 
-template<class Ele, class Keytype> void hash<Ele, Keytype>::insert(Ele *e) {
+template<class Ele, class Keytype> void hash_lock<Ele, Keytype>::insert(Ele *e) {
   entries[HASH_INDEX(e->key(), my_size_mask)].push(e);
 }
 
-template<class Ele, class Keytype> int hash<Ele, Keytype>::lock(Keytype the_key) {
+template<class Ele, class Keytype> int hash_lock<Ele, Keytype>::lock(Keytype the_key) {
   return pthread_mutex_lock(&mutexs[HASH_INDEX(the_key, my_size_mask)]);
 }
 
-template<class Ele, class Keytype> int hash<Ele, Keytype>::unlock(Keytype the_key) {
+template<class Ele, class Keytype> int hash_lock<Ele, Keytype>::unlock(Keytype the_key) {
   return pthread_mutex_unlock(&mutexs[HASH_INDEX(the_key, my_size_mask)]);
 }
-
-#endif
 
 #endif /* HASH_LOCK_H */
 

@@ -1,3 +1,7 @@
+/*
+ * Pthread implementation with reduction
+ * hashes for every thread reduced after join
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +44,7 @@ unsigned samples_to_skip;
 // key value is "unsigned".  
 hash<sample, unsigned> h;
 
-void *count_samples(void* args_);
+void *tfunction(void* args_);
 
 int main(int argc, char* argv[]) {
 
@@ -67,24 +71,36 @@ int main(int argc, char* argv[]) {
   // initialize a 16K-entry (2**14) hash of empty lists
   h.setup(14);
 
-  //initialize pthread structure with size num_threads 
+  // create thread and argument pointer arrays with size num_threads
   pthread_t* tid = new pthread_t[num_threads];
   ThreadArgs** targs = new ThreadArgs*[num_threads];
   hash<sample, unsigned>** thashs = new hash<sample, unsigned>*[num_threads];
 
-  int num_iterations = NUM_SEED_STREAMS / num_threads;
+  // 1 threads -> 4 streams each
+  // 2 threads -> 2 streams each
+  // 4 threads -> 1 streams each
+  int tstreams = NUM_SEED_STREAMS / num_threads;
   int i, j;
   sample* ts;
   sample* s;
 
   // process streams starting with different initial numbers
+  // process streams starting with different initial numbers
+  // 1 threads -> tid[0] = streams[0, 4)
+  // 2 threads -> tid[0] = streams[0, 2)
+  //           -> tid[1] = streams[2, 4)
+  // 4 threads -> tid[0] = streams[0, 1)
+  //           -> tid[1] = streams[1, 2)
+  //           -> tid[2] = streams[2, 3)
+  //           -> tid[3] = streams[3, 4)
   for (i = 0; i < num_threads; i++) {
     thashs[i] = new hash<sample, unsigned>;
     thashs[i]->setup(14);
-    targs[i] = new ThreadArgs((i * num_iterations), num_iterations, thashs[i]);
-    pthread_create(&tid[i], NULL, count_samples, (void*) targs[i]);
+    targs[i] = new ThreadArgs(i, tstreams, thashs[i]);
+    pthread_create(&tid[i], NULL, tfunction, (void*) targs[i]);
   }
 
+  // join the threads and free the arguments (doesn't touch the thashs)
   for (i = 0; i < num_threads; i++) {
     pthread_join(tid[i], NULL);
     delete targs[i];
@@ -112,17 +128,20 @@ int main(int argc, char* argv[]) {
 
   // print a list of the frequency of all samples
   h.print();
+
+  // remove the remaining data structures
   delete [] tid;
   delete [] targs;
   delete [] thashs;
 }
 
-void *count_samples(void* args_) {
+void *tfunction(void* args_) {
   int i, j, k;
   int rnum;
   unsigned key;
   sample *s;
 
+  // cast the argument to thread arguments
   ThreadArgs* args = (ThreadArgs*) args_;
 
   // process streams starting with different initial numbers
