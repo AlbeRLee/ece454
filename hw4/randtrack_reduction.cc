@@ -106,8 +106,11 @@ int main(int argc, char* argv[]) {
     delete targs[i];
   }
 
+  // go through every entry in every thread's hash
   for (i = 0; i < num_threads; i++) {
     for (j = 0; j < RAND_NUM_UPPER_BOUND; j++) {
+      
+      // lookup thread sample and global sample
       ts = thashs[i]->lookup(j);
       s = h.lookup(j);
 
@@ -116,9 +119,12 @@ int main(int argc, char* argv[]) {
           s = new sample(j);
           h.insert(s);
         }
+        
+        // collect thread sample counts
         s->count += ts->count;
       }
 
+      // reset the pointers for next lookup
       ts = NULL;
       s = NULL;
     }
