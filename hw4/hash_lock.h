@@ -25,8 +25,8 @@ public:
   void print(FILE *f = stdout);
   void reset();
   void cleanup();
-  int lock(Keytype the_key);
-  int unlock(Keytype the_key);
+  void lock_list(Keytype the_key);
+  void unlock_list(Keytype the_key);
 };
 
 template<class Ele, class Keytype> void hash_lock<Ele, Keytype>::setup(unsigned the_size_log) {
@@ -80,12 +80,14 @@ template<class Ele, class Keytype> void hash_lock<Ele, Keytype>::insert(Ele *e) 
   entries[HASH_INDEX(e->key(), my_size_mask)].push(e);
 }
 
-template<class Ele, class Keytype> int hash_lock<Ele, Keytype>::lock(Keytype the_key) {
-  return pthread_mutex_lock(&mutexs[HASH_INDEX(the_key, my_size_mask)]);
+template<class Ele, class Keytype> void hash_lock<Ele, Keytype>::lock_list(Keytype the_key) {
+  int mutex_index = HASH_INDEX(the_key, my_size_mask);
+  pthread_mutex_lock(&mutexs[mutex_index]);
 }
 
-template<class Ele, class Keytype> int hash_lock<Ele, Keytype>::unlock(Keytype the_key) {
-  return pthread_mutex_unlock(&mutexs[HASH_INDEX(the_key, my_size_mask)]);
+template<class Ele, class Keytype> void hash_lock<Ele, Keytype>::unlock_list(Keytype the_key) {
+  int mutex_index = HASH_INDEX(the_key, my_size_mask);
+  pthread_mutex_unlock(&mutexs[mutex_index]);
 }
 
 #endif /* HASH_LOCK_H */

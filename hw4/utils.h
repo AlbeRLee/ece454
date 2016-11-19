@@ -3,6 +3,8 @@
 
 #include <pthread.h>
 
+#include "hash.h"
+
 class sample;
 
 class sample {
@@ -49,11 +51,11 @@ public:
     printf("%d %d\n", my_key, count);
   }
 
-  int lock() {
+  void lock_sample() {
     pthread_mutex_lock(&mutex);
   }
 
-  int unlock() {
+  void unlock_sample() {
     pthread_mutex_unlock(&mutex);
   }
 };

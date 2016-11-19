@@ -133,7 +133,7 @@ void *tfunction(void* args_) {
       key = rnum % RAND_NUM_UPPER_BOUND;
 
       /********************* Beginning of the critical section *********************/
-      h.lock(key);
+      h.lock_list(key);
       // if this sample has not been counted before
       if (!(s = h.lookup(key))) {
 
@@ -141,15 +141,15 @@ void *tfunction(void* args_) {
         s = new sample_lock(key);
         h.insert(s);
       }
-      h.unlock(key);
+      h.unlock_list(key);
       /************************ End of the critical section ************************/
 
       /********************* Beginning of the critical section *********************/
-      s->lock();
+      s->lock_sample();
       // increment the count for the sample
       s->count++;
 
-      s->unlock();
+      s->unlock_sample();
       /************************ End of the critical section ************************/
     }
   }
