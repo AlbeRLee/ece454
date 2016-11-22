@@ -37,6 +37,8 @@ nbproject/
 # tar files
 *.tgz
 *.tar
+*.gz
+*.tar.gz
 
 # unuseful log files
 *.log
