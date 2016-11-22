@@ -1,20 +1,9 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/* 
- * File:   utils.h
- * Author: gocmenta
- *
- * Created on November 15, 2016, 10:21 PM
- */
-
 #ifndef UTILS_H
 #define UTILS_H
 
 #include <pthread.h>
+
+#include "hash.h"
 
 class sample;
 
@@ -62,11 +51,11 @@ public:
     printf("%d %d\n", my_key, count);
   }
 
-  int lock() {
+  void lock_sample() {
     pthread_mutex_lock(&mutex);
   }
 
-  int unlock() {
+  void unlock_sample() {
     pthread_mutex_unlock(&mutex);
   }
 };
@@ -76,22 +65,19 @@ class ThreadArgs;
 class ThreadArgs {
 public:
   int index;
-  int itrns;
   int endex;
 
   hash<sample, unsigned>* h;
 
-  ThreadArgs(int index_, int itrns_) {
-    index = index_;
-    itrns = itrns_;
-    endex = index_ + itrns_;
+  ThreadArgs(int index_, int tstreams_) {
+    index = index_ * tstreams_;
+    endex = (index + 1) * tstreams_;
     h = NULL;
   }
 
-  ThreadArgs(int index_, int itrns_, hash<sample, unsigned>* h_) {
-    index = index_;
-    itrns = itrns_;
-    endex = index_ + itrns_;
+  ThreadArgs(int index_, int tstreams_, hash<sample, unsigned>* h_) {
+    index = index_ * tstreams_;
+    endex = (index + 1) * tstreams_;
     h = h_;
   }
 };
