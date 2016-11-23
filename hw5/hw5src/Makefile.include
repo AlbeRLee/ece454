@@ -22,10 +22,12 @@ ifeq ($(USE_GCC),1)
 	CC = gcc
 	LINKER = gcc
 	COPTFLAGS = -Wall -g -O2
+  # can this be just -03
 else
 	CC = icc
 	LINKER = icc
 	COPTFLAGS = -g -O2
+  # can this be just -03
 endif
 
 CPPFLAGS += -D$(TIMER_TYPE) 
