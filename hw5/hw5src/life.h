@@ -9,22 +9,22 @@
  * inboard (but you don't know which).
  */
 char*
-game_of_life (char* outboard, 
-	      char* inboard,
-	      const int nrows,
-	      const int ncols,
-	      const int gens_max);
+game_of_life(char* outboard,
+        char* inboard,
+        const int nrows,
+        const int ncols,
+        const int gens_max);
 
 /**
  * Same output as game_of_life() above, except this is not
  * parallelized.  Useful for checking output.
  */
 char*
-sequential_game_of_life (char* outboard, 
-			 char* inboard,
-			 const int nrows,
-			 const int ncols,
-			 const int gens_max);
+sequential_game_of_life(char* outboard,
+        char* inboard,
+        const int nrows,
+        const int ncols,
+        const int gens_max);
 
 
 #endif /* _life_h */

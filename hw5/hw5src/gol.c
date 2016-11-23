@@ -14,8 +14,6 @@
 #define DO_VERIFY 0
 #endif // VERIFY_FLAG
 
-// hello
-
 static int
 to_int(int* num, const char* s) {
   errno = 0;
