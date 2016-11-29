@@ -1,0 +1,264 @@
+        -:    0:Source:gol.c
+        -:    0:Graph:gol.gcno
+        -:    0:Data:gol.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <assert.h>
+        -:    2:#include <errno.h>
+        -:    3:#include <stdio.h>
+        -:    4:#include <stdlib.h>
+        -:    5:#include <string.h>
+        -:    6:
+        -:    7:#include "life.h"
+        -:    8:#include "load.h"
+        -:    9:#include "save.h"
+        -:   10:
+        -:   11:#ifdef VERIFY_FLAG
+        -:   12:#define DO_VERIFY 1
+        -:   13:#else // VERIFY_FLAG
+        -:   14:#define DO_VERIFY 0
+        -:   15:#endif // VERIFY_FLAG
+        -:   16:
+        -:   17:
+        -:   18:static int
+function to_int called 1 returned 100% blocks executed 75%
+        1:   19:to_int (int* num, const char* s)
+        -:   20:{
+        1:   21:  errno = 0;
+call    0 returned 100%
+        1:   22:  *num = strtol (s, NULL, 10);
+call    0 returned 100%
+        1:   23:  if (errno != 0)
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+        -:   24:    {
+    #####:   25:      errno = 0; /* Reset errno */
+call    0 never executed
+    #####:   26:      return -1;
+        -:   27:    }
+        -:   28:  else
+        1:   29:    return 0;
+        -:   30:}
+        -:   31:
+        -:   32:static void 
+function print_usage called 0 returned 0% blocks executed 0%
+    #####:   33:print_usage (const char argv0[])
+        -:   34:{
+    #####:   35:  fprintf (stderr, 
+call    0 never executed
+        -:   36:	   "\nUsage: %s <num_generations> <infilename> <outfilename>\n\n"
+        -:   37:	   "\t<num_generations>: nonnegative number of generations\n"
+        -:   38:	   "\t<infilename>:      file from which to load initial board configuration\n"
+        -:   39:	   "\t<outfilename>:     file to which to save final board configuration;\n"
+        -:   40:           "\t                   if not provided or just a single hyphen (-), then \n"
+        -:   41:	   "\t                   board is output to stdout\n"
+        -:   42:	   "\n\n", argv0);
+    #####:   43:}
+        -:   44:
+        -:   45:static void
+function copy_board called 0 returned 0% blocks executed 0%
+    #####:   46:copy_board (char outboard[], const char inboard[], const int nrows, const int ncols)
+        -:   47:{
+        -:   48:  /* We use memmove in case outboard and inboard overlap (in this
+        -:   49:     case, this would mean that they are the same */
+    #####:   50:  memmove (outboard, inboard, nrows * ncols * sizeof (char));
+    #####:   51:}
+        -:   52:
+        -:   53:static int
+function boards_equalp called 0 returned 0% blocks executed 0%
+    #####:   54:boards_equalp (const char b1[], const char b2[], const int nrows, const int ncols)
+        -:   55:{
+        -:   56:  int i;
+    #####:   57:  for (i = 0; i < nrows * ncols; i++)
+branch  0 never executed
+branch  1 never executed
+    #####:   58:    if (b1[i] != b2[i])
+branch  0 never executed
+branch  1 never executed
+    #####:   59:      return 0;
+        -:   60:
+    #####:   61:  return 1;
+        -:   62:}
+        -:   63:
+        -:   64:int 
+function main called 1 returned 100% blocks executed 54%
+        1:   65:main (int argc, char* argv[])
+        -:   66:{
+        -:   67:  /*
+        -:   68:   * Set verifyp to 1 if you want to turn on verification.
+        -:   69:   */
+        1:   70:  const int verifyp = DO_VERIFY;
+        1:   71:  const int argc_min = 3;
+        1:   72:  const int argc_max = 4;
+        -:   73:
+        1:   74:  int gens_max = 0;
+        1:   75:  char* inboard = NULL;
+        1:   76:  char* outboard = NULL;
+        1:   77:  char* checkboard = NULL;
+        1:   78:  char* final_board = NULL;
+        1:   79:  int nrows = 0;
+        1:   80:  int ncols = 0;
+        1:   81:  FILE* input = NULL;
+        1:   82:  FILE* output = NULL;
+        1:   83:  int err = 0;
+        -:   84:
+        -:   85:  /* Parse command-line arguments */
+        1:   86:  if (argc < argc_min || argc > argc_max)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+        -:   87:    {
+    #####:   88:      fprintf (stderr, "*** Wrong number of command-line arguments; "
+call    0 never executed
+        -:   89:	       "got %d, need at least %d and no more than %d ***\n", 
+        -:   90:	       argc - 1, argc_min - 1, argc_max - 1);
+    #####:   91:      print_usage (argv[0]);
+call    0 never executed
+    #####:   92:      exit (EXIT_FAILURE);
+call    0 never executed
+        -:   93:    }
+        -:   94:  
+        1:   95:  err = to_int (&gens_max, argv[1]);
+call    0 returned 100%
+        1:   96:  if (err != 0)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   97:    {
+    #####:   98:      fprintf (stderr, "*** <num_generations> argument \'%s\' "
+call    0 never executed
+    #####:   99:	       "must be a nonnegative integer! ***\n", argv[1]);
+    #####:  100:      print_usage (argv[0]);
+call    0 never executed
+    #####:  101:      exit (EXIT_FAILURE);
+call    0 never executed
+        -:  102:    }
+        -:  103:
+        -:  104:  /* Open input and output files */ 
+        1:  105:  input = fopen (argv[2], "r");
+call    0 returned 100%
+        1:  106:  if (input == NULL)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  107:    {
+    #####:  108:      fprintf (stderr, "*** Failed to open input file \'%s\' for reading! ***\n", argv[2]);
+call    0 never executed
+    #####:  109:      print_usage (argv[0]);
+call    0 never executed
+    #####:  110:      exit (EXIT_FAILURE);
+call    0 never executed
+        -:  111:    }
+        -:  112:
+        1:  113:  if (argc < argc_max || 0 == strcmp (argv[3], "-"))
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+    #####:  114:    output = stdout;
+        -:  115:  else
+        -:  116:    {
+        1:  117:      output = fopen (argv[3], "w");
+call    0 returned 100%
+        1:  118:      if (output == NULL)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  119:	{
+    #####:  120:	  fprintf (stderr, "*** Failed to open output file \'%s\' for writing! ***\n", argv[3]);
+call    0 never executed
+    #####:  121:	  print_usage (argv[0]);
+call    0 never executed
+    #####:  122:	  exit (EXIT_FAILURE);
+call    0 never executed
+        -:  123:	}
+        -:  124:    }
+        -:  125:
+        -:  126:  /* Load the initial board state from the input file */
+        1:  127:  inboard = load_board (input, &nrows, &ncols);
+call    0 returned 100%
+        1:  128:  fclose (input);
+call    0 returned 100%
+        -:  129:
+        -:  130:  /* Create a second board for ping-ponging */
+        1:  131:  outboard = make_board (nrows, ncols);
+call    0 returned 100%
+        -:  132:
+        -:  133:  /* If we want to verify the result, then make a third board and copy
+        -:  134:     the initial state into it */
+        1:  135:  if (verifyp)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  136:    {
+    #####:  137:      checkboard = make_board (nrows, ncols);
+call    0 never executed
+    #####:  138:      copy_board (checkboard, inboard, nrows, ncols);
+call    0 never executed
+        -:  139:    }
+        -:  140:
+        -:  141:  /* 
+        -:  142:   * Evolve board gens_max ticks, and time the evolution.  You will
+        -:  143:   * parallelize the game_of_life() function for this assignment.
+        -:  144:   */
+        1:  145:  final_board = game_of_life (outboard, inboard, nrows, ncols, gens_max);
+call    0 returned 100%
+        -:  146:
+        -:  147:  /* Print (or save, depending on command-line argument <outfilename>)
+        -:  148:     the final board */
+        1:  149:  save_board (output, final_board, nrows, ncols);
+call    0 returned 100%
+        1:  150:  if (output != stdout && output != stderr)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+        1:  151:    fclose (output);
+call    0 returned 100%
+        -:  152:
+        1:  153:  if (verifyp)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:  154:    {
+        -:  155:      /* Make sure that outboard has the final state, so we can verify
+        -:  156:	 it.  Since we ping-pong between inboard and outboard, it
+        -:  157:	 could be either that inboard == final_board or that outboard
+        -:  158:	 == final_board */
+    #####:  159:      copy_board (outboard, final_board, nrows, ncols);
+call    0 never executed
+        -:  160:
+        -:  161:      /* Ping-pong between checkboard (contains the initial state) and
+        -:  162:	 inboard */
+    #####:  163:      final_board = sequential_game_of_life (inboard, checkboard, nrows, ncols, gens_max);
+call    0 never executed
+        -:  164:
+    #####:  165:      if (boards_equalp (final_board, outboard, nrows, ncols))
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  166:	printf ("Verification successful\n");
+call    0 never executed
+        -:  167:      else
+        -:  168:	{
+    #####:  169:	  fprintf (stderr, "*** Verification failed! ***\n");
+call    0 never executed
+    #####:  170:	  exit (EXIT_FAILURE);
+call    0 never executed
+        -:  171:	}
+        -:  172:    }
+        -:  173:
+        -:  174:  /* Clean up */
+        1:  175:  if (inboard != NULL)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        1:  176:    free (inboard);
+        1:  177:  if (outboard != NULL)
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+        1:  178:    free (outboard);
+        1:  179:  if (checkboard != NULL)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  180:    free (checkboard);
+        -:  181:
+        1:  182:  return 0;
+        -:  183:}
+        -:  184:

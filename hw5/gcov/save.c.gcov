@@ -1,0 +1,68 @@
+        -:    0:Source:save.c
+        -:    0:Graph:save.gcno
+        -:    0:Data:save.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include "save.h"
+        -:    2:#include <assert.h>
+        -:    3:#include <stdlib.h>
+        -:    4:
+        -:    5:static void
+function save_dimensions called 1 returned 100% blocks executed 50%
+        1:    6:save_dimensions (FILE* output, const int nrows, const int ncols)
+        -:    7:{
+        1:    8:  int err = 0;
+        -:    9:
+        1:   10:  err = fprintf (output, "P1\n%d %d\n", nrows, ncols);
+call    0 returned 100%
+        1:   11:  if (err < 0)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   12:    {
+    #####:   13:      fprintf (stderr, "*** Failed to write board dimensions ***\n");
+call    0 never executed
+    #####:   14:      fclose (output);
+call    0 never executed
+    #####:   15:      exit (EXIT_FAILURE);
+call    0 never executed
+        -:   16:    }
+        1:   17:}
+        -:   18:
+        -:   19:static void
+function save_board_values called 1 returned 100% blocks executed 67%
+        1:   20:save_board_values (FILE* output, const char board[], const int nrows, const int ncols)
+        -:   21:{
+        1:   22:  int err = 0;
+        1:   23:  int i = 0;
+        -:   24:
+  1048577:   25:  for (i = 0; i < nrows * ncols; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:   26:    {
+        -:   27:      /* ASCII '0' is not zero; do the conversion */
+  1048576:   28:      err = fprintf (output, "%c\n", board[i] + '0');
+call    0 returned 100%
+  1048576:   29:      if (err < 0)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   30:	{
+    #####:   31:	  fprintf (stderr, "*** Failed to write board item %d ***\n", i);
+call    0 never executed
+    #####:   32:	  fclose (output);
+call    0 never executed
+    #####:   33:	  exit (EXIT_FAILURE);
+call    0 never executed
+        -:   34:	}
+        -:   35:    }
+        1:   36:}
+        -:   37:
+        -:   38:
+        -:   39:void
+function save_board called 1 returned 100% blocks executed 100%
+        1:   40:save_board (FILE* output, const char board[], const int nrows, const int ncols)
+        -:   41:{
+        1:   42:  save_dimensions (output, nrows, ncols);
+call    0 returned 100%
+        1:   43:  save_board_values (output, board, nrows, ncols);
+call    0 returned 100%
+        1:   44:}

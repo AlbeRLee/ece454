@@ -1,0 +1,123 @@
+        -:    0:Source:load.c
+        -:    0:Graph:load.gcno
+        -:    0:Data:load.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include "load.h"
+        -:    2:#include <assert.h>
+        -:    3:#include <stdlib.h>
+        -:    4:
+        -:    5:char*
+function make_board called 2 returned 100% blocks executed 86%
+        2:    6:make_board (const int nrows, const int ncols)
+        -:    7:{
+        2:    8:  char* board = NULL;
+        -:    9:  int i;
+        -:   10:
+        -:   11:  /* Allocate the board and fill in with 'Z' (instead of a number, so
+        -:   12:     that it's easy to diagnose bugs */
+        2:   13:  board = malloc (2 * nrows * ncols * sizeof (char));
+        2:   14:  assert (board != NULL);
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+call    2 never executed
+  2097154:   15:  for (i = 0; i < nrows * ncols; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+  2097152:   16:    board[i] = 'Z';
+        -:   17:
+        2:   18:  return board;
+        -:   19:}
+        -:   20:
+        -:   21:static void
+function load_dimensions called 1 returned 100% blocks executed 36%
+        1:   22:load_dimensions (FILE* input, int* nrows, int* ncols)
+        -:   23:{
+        1:   24:  int ngotten = 0;
+        -:   25:  
+        1:   26:  ngotten = fscanf (input, "P1\n%d %d\n", nrows, ncols);
+call    0 returned 100%
+        1:   27:  if (ngotten < 1)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   28:    {
+    #####:   29:      fprintf (stderr, "*** Failed to read 'P1' and board dimensions ***\n");
+call    0 never executed
+    #####:   30:      fclose (input);
+call    0 never executed
+    #####:   31:      exit (EXIT_FAILURE);
+call    0 never executed
+        -:   32:    }
+        1:   33:  if (*nrows < 1)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   34:    {
+    #####:   35:      fprintf (stderr, "*** Number of rows %d must be positive! ***\n", *nrows);
+call    0 never executed
+    #####:   36:      fclose (input);
+call    0 never executed
+    #####:   37:      exit (EXIT_FAILURE);
+call    0 never executed
+        -:   38:    }
+        1:   39:  if (*ncols < 1)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   40:    {
+    #####:   41:      fprintf (stderr, "*** Number of cols %d must be positive! ***\n", *ncols);
+call    0 never executed
+    #####:   42:      fclose (input);
+call    0 never executed
+    #####:   43:      exit (EXIT_FAILURE);
+call    0 never executed
+        -:   44:    }
+        1:   45:}
+        -:   46:
+        -:   47:static char*
+function load_board_values called 1 returned 100% blocks executed 73%
+        1:   48:load_board_values (FILE* input, const int nrows, const int ncols)
+        -:   49:{
+        1:   50:  char* board = NULL;
+        1:   51:  int ngotten = 0;
+        1:   52:  int i = 0;
+        -:   53:
+        -:   54:  /* Make a new board */
+        1:   55:  board = make_board (nrows, ncols);
+call    0 returned 100%
+        -:   56:
+        -:   57:  /* Fill in the board with values from the input file */
+  1048577:   58:  for (i = 0; i < nrows * ncols; i++)
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+        -:   59:    {
+  1048576:   60:      ngotten = fscanf (input, "%c\n", &board[i]);
+call    0 returned 100%
+  1048576:   61:      if (ngotten < 1)
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+        -:   62:	{
+    #####:   63:	  fprintf (stderr, "*** Ran out of input at item %d ***\n", i);
+call    0 never executed
+    #####:   64:	  fclose (input);
+call    0 never executed
+    #####:   65:	  exit (EXIT_FAILURE);
+call    0 never executed
+        -:   66:	}
+        -:   67:      else
+        -:   68:	/* ASCII '0' is not zero; do the conversion */
+  1048576:   69:	board[i] = board[i] - '0';
+        -:   70:    }
+        -:   71:
+        1:   72:  return board;
+        -:   73:}
+        -:   74:
+        -:   75:char*
+function load_board called 1 returned 100% blocks executed 100%
+        1:   76:load_board (FILE* input, int* nrows, int* ncols)
+        -:   77:{
+        1:   78:  load_dimensions (input, nrows, ncols);
+call    0 returned 100%
+        1:   79:  return load_board_values (input, *nrows, *ncols);
+call    0 returned 100%
+        -:   80:}
+        -:   81:
+        -:   82:

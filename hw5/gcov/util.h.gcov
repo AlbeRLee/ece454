@@ -1,0 +1,47 @@
+        -:    0:Source:util.h
+        -:    0:Graph:lifeseq.gcno
+        -:    0:Data:lifeseq.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#ifndef _util_h
+        -:    2:#define _util_h
+        -:    3:
+        -:    4:/**
+        -:    5: * C's mod ('%') operator is mathematically correct, but it may return
+        -:    6: * a negative remainder even when both inputs are nonnegative.  This
+        -:    7: * function always returns a nonnegative remainder (x mod m), as long
+        -:    8: * as x and m are both positive.  This is helpful for computing
+        -:    9: * toroidal boundary conditions.
+        -:   10: */
+        -:   11:static inline int 
+function mod called 41943040000 returned 100% blocks executed 100%
+41943040000:   12:mod (int x, int m)
+        -:   13:{
+41943040000:   14:  return (x < 0) ? ((x % m) + m) : (x % m);
+branch  0 taken 1% (fallthrough)
+branch  1 taken 99%
+        -:   15:}
+        -:   16:
+        -:   17:/**
+        -:   18: * Given neighbor count and current state, return zero if cell will be
+        -:   19: * dead, or nonzero if cell will be alive, in the next round.
+        -:   20: */
+        -:   21:static inline char 
+function alivep called 10485760000 returned 100% blocks executed 100%
+10485760000:   22:alivep (char count, char state)
+        -:   23:{
+10846837550:   24:  return (! state && (count == (char) 3)) ||
+branch  0 taken 97% (fallthrough)
+branch  1 taken 3%
+branch  2 taken 99% (fallthrough)
+branch  3 taken 1%
+branch  4 taken 3% (fallthrough)
+branch  5 taken 97%
+361571639:   25:    (state && (count >= 2) && (count <= 3));
+branch  0 taken 85% (fallthrough)
+branch  1 taken 15%
+branch  2 taken 93% (fallthrough)
+branch  3 taken 7%
+        -:   26:}
+        -:   27:
+        -:   28:#endif /* _util_h */
