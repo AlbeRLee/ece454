@@ -1,0 +1,76 @@
+The most important (highest counts) gcov files are, in decreasing order:
+lifeseq.c.gcov
+util.h.gcov // contains static inline funcitons mod and alivep used in lifeseq
+load.c.gcov // read from file
+save.c.gcov // store in file
+
+
+Other files that only have lines/branches that execute once:
+gol.c.gcov  // runs main function and calls life.c->lifeseq.c
+life.c.gcov // just calls lifeseq.c
+
+
+Below is terminal output from making the gcov output files:
+
+
+ug141:~/ece454/Lab5/hw5src% gcov -b gol
+File 'gol.c'
+Lines executed:53.85% of 78
+Branches executed:83.33% of 36
+Taken at least once:41.67% of 36
+Calls executed:35.29% of 34
+Creating 'gol.c.gcov'
+
+ug141:~/ece454/Lab5/hw5src% gcov -b life
+File 'life.c'
+Lines executed:100.00% of 2
+No branches
+Calls executed:100.00% of 1
+Creating 'life.c.gcov'
+
+ug141:~/ece454/Lab5/hw5src% gcov -b lifeseq
+File 'lifeseq.c'
+Lines executed:100.00% of 21
+Branches executed:100.00% of 6
+Taken at least once:100.00% of 6
+Calls executed:100.00% of 5
+Creating 'lifeseq.c.gcov'
+
+File 'util.h'
+Lines executed:100.00% of 5
+Branches executed:100.00% of 12
+Taken at least once:100.00% of 12
+No calls
+Creating 'util.h.gcov'
+
+ug141:~/ece454/Lab5/hw5src% gcov -b load
+File 'load.c'
+Lines executed:69.23% of 39
+Branches executed:100.00% of 14
+Taken at least once:64.29% of 14
+Calls executed:27.78% of 18
+Creating 'load.c.gcov'
+
+ug141:~/ece454/Lab5/hw5src% gcov -b save
+File 'save.c'
+Lines executed:72.73% of 22
+Branches executed:100.00% of 6
+Taken at least once:66.67% of 6
+Calls executed:40.00% of 10
+Creating 'save.c.gcov'
+
+ug141:~/ece454/Lab5/hw5src% gcov -b bitboard
+bitboard.gcda:cannot open data file, assuming not executed
+File 'bitboard.c'
+No executable lines
+No branches
+No calls
+Removing 'bitboard.c.gcov'
+
+ug141:~/ece454/Lab5/hw5src% gcov -b random_bit
+random_bit.gcda:cannot open data file, assuming not executed
+File 'random_bit.c'
+No executable lines
+No branches
+No calls
+Removing 'random_bit.c.gcov'
