@@ -1,0 +1,24 @@
+Game of Life - Performance Timing
+
+
+ORIGINAL gol
+~~~~~~~~~~~~
+111.34 real
+111.17user 0.00system 1:51.28elapsed 99%cpu
+    (0avgtext+0avgdata 4400maxresident)k
+    0inputs+4104outputs
+    (0major+1098minor)pagefaults 0swaps
+110.76 real
+110.53 real
+110.65 real
+
+avg=110.89
+~~~~~~~~~~~
+
+goal: 4x [27.7s] (50%); 8x [13.8] (80%)
+
+gprof compiled runtime = 115.35 real
+gcov compiled runtime = 304.38 real
+
+~~~~~~~~~~~~
+

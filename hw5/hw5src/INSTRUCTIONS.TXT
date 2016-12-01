@@ -1,0 +1,25 @@
+# How to run or test the game-of-life code
+# (gol)
+
+SETUP:
+
+ make
+# input/output files are in simple image format .pbm
+# to create arbitrary size input file run initboard
+    initboard <num_rows> <num_cols> > <generated_file_name>
+
+EXEC and MEASURE:
+
+# run code test case
+    gol <num_iterations> <in_file_name> <out_file_name>
+# run and measure time example
+    /usr/bin/time -f "%e real" ./gol 10000 inputs/1k.pbm outputs/1k.pbm
+
+VERIFY:
+
+ # can convert output file generated to a jpeg
+    convert filename.pmb filename.jpg
+# and then view the .jpg in brownser
+
+# check if output file matches the expected one
+    diff outputs/1k.pbm outputs/1k_verify_out.pbm
