@@ -3,6 +3,7 @@ Game of Life - Performance Timing
 
 ORIGINAL gol
 ~~~~~~~~~~~~
+time gol 10000 generations over 1k grid:
 111.34 real
 111.17user 0.00system 1:51.28elapsed 99%cpu
     (0avgtext+0avgdata 4400maxresident)k
@@ -12,13 +13,21 @@ ORIGINAL gol
 110.53 real
 110.65 real
 
-avg=110.89
+1k  avg=110.89
+512 avg=25.83
+128 avg=1.61
 ~~~~~~~~~~~
 
-goal: 4x [27.7s] (50%); 8x [13.8] (80%)
-
+goal for 1k: 4x [27.7s] (50%); 8x [13.8] (80%)
 gprof compiled runtime = 115.35 real
 gcov compiled runtime = 304.38 real
+
+~~~~~~~~~~~~
+
+Swapping the loop order, j outer loop, i inner loop (cols then rows)
+1k  = ~100
+512 = 25.122
+128 = 1.58
 
 ~~~~~~~~~~~~
 
