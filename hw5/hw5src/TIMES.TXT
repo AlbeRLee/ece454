@@ -1,8 +1,7 @@
 Game of Life - Performance Timing
 
-
-ORIGINAL gol
-~~~~~~~~~~~~
+ORIGINAL sequential gol
+~~~~~~~~~~~~~~~~~~~~~~~~
 time gol 10000 generations over 1k grid:
 111.34 real
 111.17user 0.00system 1:51.28elapsed 99%cpu
@@ -13,21 +12,30 @@ time gol 10000 generations over 1k grid:
 110.53 real
 110.65 real
 
-1k  avg=110.89
-512 avg=25.83
-128 avg=1.61
-~~~~~~~~~~~
+1k  avg = 110.89
+512 avg = 25.83
+128 avg = 1.62
 
-goal for 1k: 4x [27.7s] (50%); 8x [13.8] (80%)
+GOAL
+~~~~~
+goal for 1k: 27.7s (4x) [50%]; 13.8s (8x) [80%]
 gprof compiled runtime = 115.35 real
 gcov compiled runtime = 304.38 real
 
-~~~~~~~~~~~~
+SWAP LOOP ORDER
+~~~~~~~~~~~~~~~~
+Swapping the loop order, s.t. j is outer loop, i is inner loop (cols then rows)
+1k  = ~100  (1.11)
+512 = 25.12 (1.03)
+128 = 1.58  (1.02)
 
-Swapping the loop order, j outer loop, i inner loop (cols then rows)
-1k  = ~100
-512 = 25.122
-128 = 1.58
+SLIDING WINDOW v1
+~~~~~~~~~~~~~~~~~~
+Avoid unecessary reads from inboard by only performing reads for the cells
+on the leading edge of the sliding 3x3 game box
+1k  = 78.98 (1.40)
+512 = 18.18 (1.42)
+128 = 0.903 (1.79)
 
-~~~~~~~~~~~~
+
 
