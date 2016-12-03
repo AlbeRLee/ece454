@@ -22,6 +22,7 @@ goal for 1k: 27.7s (4x) [50%]; 13.8s (8x) [80%]
 gprof compiled runtime = 115.35 real
 gcov compiled runtime = 304.38 real
 
+
 SWAP LOOP ORDER
 ~~~~~~~~~~~~~~~~
 Swapping the loop order, s.t. j is outer loop, i is inner loop (cols then rows)
@@ -37,5 +38,12 @@ on the leading edge of the sliding 3x3 game box
 512 = 18.18 (1.42)
 128 = 0.903 (1.79)
 
+SLIDING WINDOW v2
+~~~~~~~~~~~~~~~~~~
+Less local variables, combine nw+sw into tbw, etc.
+Tried loop unrolling to 3 stages, time jumped to ~12s
+1k  = 47.73 (2.32)
+512 = 11.09 (2.33)
+128 = 0.32  (5.06)
 
 
