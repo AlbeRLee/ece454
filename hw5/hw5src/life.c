@@ -60,10 +60,11 @@ game_of_life(char* outboard,
     // HINT: in the parallel decomposition, LDA may not be equal to nrows!!!
     const int LDA = nrows;
     int curgen, i, j;
-    int curcell;
+    //int curcell;
     char destiny;
-    char Cnw, Cn, Cne, Cw, Ce, Csw, Cs, Cse;
-    int inorth, isouth, jwest, jeast;
+    //char Cnw, Cn, Cne, Cw, Ce, Csw, Cs, Cse;
+    char tb, tbe, tbw, w, curr, e;
+    int inorth, isouth, Nncols; // jwest; //jeast;
     
     for (curgen = 0; curgen < gens_max; curgen++)
     {
@@ -71,50 +72,50 @@ game_of_life(char* outboard,
            geometric decomposition of the output */
         for (i = 0; i < nrows; i++)
         {
-            j = 0;
             // why were these const int?
             inorth = mod (i-1, nrows);
             isouth = mod (i+1, nrows);
-            jwest = mod (j-1, ncols);
-            jeast = mod (j+1, ncols);
+            Nncols = ncols-1;
             
             // assign the values one step ahead
-            Cnw = 0;
-            Cn = BOARD (inboard, inorth, jwest);
-            Cne = BOARD (inboard, inorth, j);
-            //Cne = BOARD (inboard, inorth, jeast);
-            Cw = 0;
-            curcell = BOARD (inboard, i, jwest);
-            Ce = BOARD (inboard, i, j);
-            //Ce = BOARD (inboard, i, jeast);
-            Csw = 0;
-            Cs = BOARD (inboard, isouth, jwest);
-            Cse = BOARD (inboard, isouth, j);
-            //Cse = BOARD (inboard, isouth, jeast);
+            //Cnw = BOARD (inboard, inorth, Nncols-1);
+            //Cn = BOARD (inboard, inorth, Nncols);
+            //Cne = BOARD (inboard, inorth, 0);
             
-            for (j = 0; j < ncols; j++)
+            w = BOARD (inboard, i, Nncols-1);
+            curr = BOARD (inboard, i, Nncols);
+            e = BOARD (inboard, i, 0);
+            
+            //Csw = BOARD (inboard, isouth, Nncols-1);
+            //Cs = BOARD (inboard, isouth, Nncols);
+            //Cse = BOARD (inboard, isouth, 0);
+            
+            tb = BOARD (inboard, inorth, Nncols) + BOARD (inboard, isouth, Nncols);
+            tbw = BOARD (inboard, inorth, Nncols-1) + BOARD (inboard, isouth, Nncols-1);
+            tbe = BOARD (inboard, inorth, 0) + BOARD (inboard, isouth, 0);
+            
+            const char neighborCnt = w + e + tb + tbw + tbe;
+            destiny = alivep (neighborCnt, curr);
+            BOARD(outboard, i, Nncols) = destiny;
+            
+            for (j = 1; j < ncols; j++) //up to ncols-1
             {
-                jeast = mod (j+1, ncols);
+                //jeast = mod (j+1, ncols);
                 
                 // sliding window tactic, cut down the #of mem reads,
                 // only read on the leading edge of 3x3 game box front
-                Cnw = Cn;
-                Cn = Cne;
-                Cne = BOARD (inboard, inorth, jeast);
-                Cw = curcell;
-                curcell = Ce;
-                Ce = BOARD (inboard, i, jeast);
-                Csw = Cs;
-                Cs = Cse;
-                Cse = BOARD (inboard, isouth, jeast);
+                tbw = tb;
+                tb = tbe;
+                w = curr;
+                curr = e;
+                tbe = BOARD (inboard, inorth, j) + BOARD (inboard, isouth, j);
+                e = BOARD (inboard, i, j);
                 
-                const char neighbor_count = ((Cnw + Cn) + (Cne + Cw)) + ((Ce + Csw) + (Cs + Cse));
-                
-                destiny = alivep (neighbor_count, curcell);
-                
-                BOARD(outboard, i, j) = destiny;
-
+                const char neighbor_count = w + e + tb + tbw + tbe;
+                destiny = alivep (neighbor_count, curr);
+                BOARD(outboard, i, j-1) = destiny;
             }
+            
         }
         SWAP_BOARDS( outboard, inboard );
 
