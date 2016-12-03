@@ -1,6 +1,16 @@
 #ifndef _life_h
 #define _life_h
 
+/*
+* TeamName: Hugh Mungus
+* Member1Name: Taylan Gocmen
+* Member1ID: 1000379949
+* member1Email: taylan.gocmen@mail.utoronto.ca
+* Member2Name: Gligor Djogo
+* Member2ID: 1000884206
+* member2Email: g.djogo@mail.utoronto.ca
+*/
+
 /**
  * Given the initial board state in inboard and the board dimensions
  * nrows by ncols, evolve the board state gens_max times by alternating
