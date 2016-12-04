@@ -23,4 +23,14 @@ alivep(char count, char state) {
           (state && (count >= 2) && (count <= 3));
 }
 
+#define INCR(__board, __i, __j)  (__board[(__i) + nrows*(__j)]++)
+#define DECR(__board, __i, __j)  (__board[(__i) + nrows*(__j)]--)
+
+/* Living and dying conditions */
+#define IS_ALIVE(x) ((x >> 4) & 0x1)
+#define LIVE(x) (x |= (1 << 4))
+#define DIE(x) (x &= ~(1 << 4))
+#define ALIVE_SHOULD_DIE(x) ((x < (char)0x12) || (x > (char)0x13))
+#define DEAD_SHOULD_LIVE(x) (x == (char)0x3)
+
 #endif /* _util_h */
