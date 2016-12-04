@@ -5,6 +5,11 @@
 #include "life.h"
 #include "util.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+
 /* 
  * Swapping the two boards only involves swapping pointers, not copying values.
  */
@@ -19,6 +24,35 @@
 
 
 //#define RUN_ORIGINAL
+
+
+/*****************************************************************************
+ * Parallelization
+ ****************************************************************************/
+
+#define NUM_THREADS 8
+
+typedef struct thread_arguments {
+  char* inboard;
+  char* outboard;
+  int ncols;
+  int nrows;
+  int LDA;
+  int index;
+  int endex;
+} thread_arg;
+
+thread_arg*
+thread_arg_create(char* inboard, char* outboard, int ncols, int nrows, int LDA, int index){
+  thread_arg* arg = malloc(sizeof(thread_arg));
+  arg->inboard = inboard;
+  arg->outboard = outboard;
+  arg->ncols = ncols;
+  arg->nrows = nrows;
+  arg->LDA = LDA;
+  arg->index = index;
+  return arg;
+}
 
 /*****************************************************************************
  * Helper function definitions
