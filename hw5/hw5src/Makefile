@@ -30,7 +30,7 @@ OBJS = $(GOL_OBJS) $(BITBOARD_OBJS)
 all: $(GOL_EXE) $(BITBOARD_EXE)
 
 $(GOL_EXE): $(GOL_OBJS) 
-	$(LINKER) $(CFLAGS) $(LDFLAGS) $(GOL_OBJS) -o $@ # -lpthread # when multi threaded
+	$(LINKER) $(CFLAGS) $(LDFLAGS) $(GOL_OBJS) -o $@
 
 $(GOL_VERIFY_EXE): $(GOL_VERIFY_OBJS) 
 	$(LINKER) $(CFLAGS) $(LDFLAGS) $(GOL_VERIFY_OBJS) -o $@ 
