@@ -19,6 +19,8 @@
 
 #define BOARD( __board, __i, __j )  (__board[(__i) + nrows*(__j)])
 
+#define RUN_SEQUENTIAL 1
+
 /*****************************************************************************
  * Game of life implementation
  ****************************************************************************/
@@ -26,6 +28,10 @@ char*
 game_of_life(char* outboard, char* inboard,
   const int nrows, const int ncols, const int gens_max) {
 
+#if RUN_SEQUENTIAL
+  return sequential_game_of_life(outboard, inboard, nrows, ncols, gens_max);
+#endif
+  
   if ((nrows < 32) || (nrows != ncols) || (nrows % 4) || (nrows > 10000))
     return sequential_game_of_life(outboard, inboard, nrows, ncols, gens_max);
   else
