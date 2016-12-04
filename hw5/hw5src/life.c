@@ -17,7 +17,7 @@
   b2 = temp; \
 } while(0)
 
-#define BOARD( __board, __i, __j )  (__board[(__i) + LDA*(__j)])
+#define BOARD( __board, __i, __j )  (__board[(__i) + nrows*(__j)])
 
 /*****************************************************************************
  * Game of life implementation
@@ -36,7 +36,6 @@ static inline void cell_destiny(char* outboard, char* inboard,
   const int nrows, const int ncols, const int i, const int j) {
 
   const char c = BOARD(inboard, i, j);
-
   if (IS_ALIVE(c)) {
     if (ALIVE_SHOULD_DIE(c)) {
       DIE(BOARD(outboard, i, j));
@@ -77,36 +76,92 @@ static inline void cell_destiny(char* outboard, char* inboard,
 
 }
 
+static inline void init_board(char* inboard,
+  const int nrows, const int ncols) {
+
+  int i, j;
+  for (i = 0; i < nrows; i++) {
+    for (j = 0; j < ncols; j++) {
+      if (IS_ALIVE(BOARD(inboard, i, j))) {
+
+        const int inorth = mod(i - 1, nrows);
+        const int isouth = mod(i + 1, nrows);
+        const int jwest = mod(j - 1, ncols);
+        const int jeast = mod(j + 1, ncols);
+        INCR(inboard, inorth, jwest);
+        INCR(inboard, inorth, j);
+        INCR(inboard, inorth, jeast);
+        INCR(inboard, i, jwest);
+        INCR(inboard, i, jeast);
+        INCR(inboard, isouth, jwest);
+        INCR(inboard, isouth, j);
+        INCR(inboard, isouth, jeast);
+      }
+    }
+  }
+}
+
 char* parallel_game_of_life(char* outboard, char* inboard,
   const int nrows, const int ncols, const int gens_max) {
-  
-  int curgen, i, j, rows_per_thread, i_rows_per_thread;
+
+  init_board(inboard, nrows, ncols);
+
+  int curgen, i, j, i_rows_per_thread;
 
   pthread_t* threads = malloc(NUM_THREADS * sizeof (pthread_t));
-  ThreadArgs *targs = malloc(NUM_THREADS * sizeof (ThreadArgs));
+  ThreadArgs* targs = malloc(NUM_THREADS * sizeof (ThreadArgs));
+  ThreadArgs* targs_firsts = malloc(NUM_THREADS * sizeof (ThreadArgs));
+  ThreadArgs* targs_lasts = malloc(NUM_THREADS * sizeof (ThreadArgs));
 
-  rows_per_thread = nrows / NUM_THREADS;
-  
+
+  const int rows_per_thread = nrows / NUM_THREADS;
+
   for (i = 0, i_rows_per_thread = 0; i < NUM_THREADS; i++) {
-    
+
     targs[i].first_row = i_rows_per_thread + 1;
-    
+    targs_firsts[i].first_row = i_rows_per_thread;
+    targs_firsts[i].last_row = i_rows_per_thread + 1;
+
     i_rows_per_thread += rows_per_thread;
-    
+
     targs[i].last_row = i_rows_per_thread - 1;
-    
+    targs_lasts[i].first_row = i_rows_per_thread - 1;
+    targs_lasts[i].last_row = i_rows_per_thread;
+
     targs[i].nrows = nrows;
+    targs_firsts[i].nrows = nrows;
+    targs_lasts[i].nrows = nrows;
+
     targs[i].ncols = ncols;
+    targs_firsts[i].ncols = ncols;
+    targs_lasts[i].ncols = ncols;
   }
 
   for (curgen = 0; curgen < gens_max; curgen++) {
-    for (i = 0, i_rows_per_thread = 0; i < NUM_THREADS; i++) {
-      for (j = 0; j < ncols; j++)
-        cell_destiny(outboard, inboard, nrows, ncols, i_rows_per_thread, j);
-      i_rows_per_thread += rows_per_thread;
-      for (j = 0; j < ncols; j++)
-        cell_destiny(outboard, inboard, nrows, ncols, i_rows_per_thread - 1, j);
+
+    memmove(outboard, inboard, nrows * ncols * sizeof (char));
+
+    for (i = 0; i < NUM_THREADS; i++) {
+      targs_firsts[i].inboard = inboard;
+      targs_firsts[i].outboard = outboard;
+      pthread_create(&threads[i], NULL, thread_stub, (void*) &targs_firsts[i]);
     }
+    for (i = 0; i < NUM_THREADS; i++)
+      pthread_join(threads[i], NULL);
+
+
+
+
+    for (i = 0; i < NUM_THREADS; i++) {
+      targs_lasts[i].inboard = inboard;
+      targs_lasts[i].outboard = outboard;
+      pthread_create(&threads[i], NULL, thread_stub, (void*) &targs_lasts[i]);
+    }
+    for (i = 0; i < NUM_THREADS; i++)
+      pthread_join(threads[i], NULL);
+
+
+
 
     for (i = 0; i < NUM_THREADS; i++) {
       targs[i].inboard = inboard;
@@ -114,9 +169,8 @@ char* parallel_game_of_life(char* outboard, char* inboard,
       pthread_create(&threads[i], NULL, thread_stub, (void*) &targs[i]);
     }
 
-    for (i = 0; i < NUM_THREADS; i++) {
+    for (i = 0; i < NUM_THREADS; i++)
       pthread_join(threads[i], NULL);
-    }
 
     SWAP_BOARDS(outboard, inboard);
   }
@@ -132,10 +186,8 @@ char* parallel_game_of_life(char* outboard, char* inboard,
   return inboard;
 }
 
-
-
 void* thread_stub(void* arg) {
-  
+
   ThreadArgs* targ = (ThreadArgs*) arg;
   char * outboard = targ -> outboard;
   char * inboard = targ -> inboard;
@@ -143,10 +195,9 @@ void* thread_stub(void* arg) {
   const int ncols = targ -> ncols;
   const int first_row = targ -> first_row;
   const int last_row = targ -> last_row;
-  
-  
+
   int i, j;
-  
+
   for (i = first_row; i < last_row; i++) {
     for (j = 0; j < ncols; j++) {
       cell_destiny(outboard, inboard, nrows, ncols, i, j);
