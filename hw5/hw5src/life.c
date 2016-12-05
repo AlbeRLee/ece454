@@ -30,8 +30,8 @@
  * Parallelization
  ****************************************************************************/
 
-#define NUM_THREADS 8
-#define NUM_THREADS_1 7 // NUM_TRHEADS - 1
+#define NUM_THREADS 4
+#define NUM_THREADS_1 3 // NUM_TRHEADS - 1
 
 typedef struct thread_arguments {
   char* outboard;
@@ -58,52 +58,52 @@ thread_worker(void* args_){
   const int ncols = arg->ncols;
   // HINT: in the parallel decomposition, LDA may not be equal to nrows!!!
   const int LDA = arg->LDA;
-  const int start_row = arg->start_row;
-  const int end_row = arg->end_row;
+  const int start_col = arg->start_row;
+  const int end_col = arg->end_row;
   
   int i, j;
   char destiny;
-  char tbc, tbe, tbw, w, c, e;
-  int inorth, isouth, ncols_1, ncols_2; // jwest; //jeast;
-  ncols_1 = ncols - 1;
-  ncols_2 = ncols - 2;
+  char tbc, tbs, tbn, n, c, s;
+  int jwest, jeast, nrows_1, nrows_2; // jwest; //jeast;
+  nrows_1 = nrows - 1;
+  nrows_2 = nrows - 2;
   
-  
-  for (i = start_row; i < end_row; i++) {
+  // swap the iterations to have rows inside loop and cols outside
+  for (j = start_col; j < end_col; j++) {
     
     // why were these const int?
-    inorth = mod(i - 1, nrows);
-//    inorth = (i-1 < 0) ? (nrows-1) : (i-1);
-    isouth = mod(i + 1, nrows);
-//    isouth = (i+1 == nrows) ? (0) : (i+1);
+    jwest = mod(j - 1, ncols);
+    //inorth = (i-1 < 0) ? (nrows-1) : (i-1);
+    jeast = mod(j + 1, ncols);
+    //isouth = (i+1 == nrows) ? (0) : (i+1);
     
     // assign the values one step ahead
-    w = BOARD(inboard, i, ncols_2);
-    c = BOARD(inboard, i, ncols_1);
-    e = BOARD(inboard, i, 0);
+    n = BOARD(inboard, nrows_2, j);
+    c = BOARD(inboard, nrows_1, j);
+    s = BOARD(inboard, 0, j);
 
-    tbw = BOARD(inboard, inorth, ncols_2) + BOARD(inboard, isouth, ncols_2);
-    tbc = BOARD(inboard, inorth, ncols_1) + BOARD(inboard, isouth, ncols_1);
-    tbe = BOARD(inboard, inorth, 0) + BOARD(inboard, isouth, 0);
+    tbn = BOARD(inboard, nrows_2, jwest) + BOARD(inboard, nrows_2, jeast);
+    tbc = BOARD(inboard, nrows_1, jwest) + BOARD(inboard, nrows_1, jeast);
+    tbs = BOARD(inboard, 0, jwest) + BOARD(inboard, 0, jeast);
 
-    const char neighborCnt = w + e + tbc + tbw + tbe;
+    const char neighborCnt = n + s + tbc + tbn + tbs;
     destiny = alivep(neighborCnt, c);
-    BOARD(outboard, i, ncols_1) = destiny;
+    BOARD(outboard, nrows_1, j) = destiny;
 
-    for (j = 1; j < ncols; j++) // will write up to ncols-1
+    for (i = 1; i < nrows; i++) // will write up to nrows-1
     {
       // sliding window tactic, cut down the #of mem reads,
       // only read on the leading edge of 3x3 game box front
-      tbw = tbc;
-      tbc = tbe;
-      w = c;
-      c = e;
-      tbe = BOARD(inboard, inorth, j) + BOARD(inboard, isouth, j);
-      e = BOARD(inboard, i, j);
+      tbn = tbc;
+      tbc = tbs;
+      n = c;
+      c = s;
+      tbs = BOARD(inboard, i, jwest) + BOARD(inboard, i, jeast);
+      s = BOARD(inboard, i, j);
 
-      const char neighbor_count = w + e + tbc + tbw + tbe;
+      const char neighbor_count = n + s + tbc + tbn + tbs;
       destiny = alivep(neighbor_count, c);
-      BOARD(outboard, i, j - 1) = destiny;
+      BOARD(outboard, i-1, j) = destiny;
     }
 
   }
@@ -129,7 +129,7 @@ parallel_game_of_life(char* outboard,
 //  pthread_barrier_init(next_gen, 0, NUM_THREADS);
   
   i_rows = 0;
-  for (i = 0; i < NUM_THREADS_1; i++) {
+  for (i = 0; i < NUM_THREADS; i++) {
       thread_args[i].nrows = nrows;
       thread_args[i].ncols = ncols;
       thread_args[i].LDA = nrows;
@@ -137,11 +137,6 @@ parallel_game_of_life(char* outboard,
       i_rows += rows_per_thread;
       thread_args[i].end_row = i_rows;
   }
-  thread_args[i].nrows = nrows;
-  thread_args[i].ncols = ncols;
-  thread_args[i].LDA = nrows;
-  thread_args[i].start_row = i_rows;
-  thread_args[i].end_row = nrows;
 
   for (curgen = 0; curgen < gens_max; curgen++) {
     
