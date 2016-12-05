@@ -52,3 +52,10 @@ Parallelize with NUM_THREADS, assign block or rows to each thread_worker
 1k  = 11.3 (9.81)
 512 = 3.22 (8.02)
 128 = 0.66 (2.45)
+
+BARRIERS parll slidingWdw
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Add barriers between generations instead of fork-join every generation
+1k  = 4.61 (24.05)
+512 = 1.21 (21.35)
+128 = 0.15 (10.8)
