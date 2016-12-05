@@ -128,8 +128,6 @@ parallel_game_of_life(char* outboard,
     const int ncols,
     const int gens_max) {
 
-  // HINT: in the parallel decomposition, LDA may not be equal to nrows!!!
-  //const int LDA = nrows;
   int i, i_rows;
   const int rows_per_thread = nrows/NUM_THREADS; //except last thread gets extra
 
