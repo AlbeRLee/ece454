@@ -21,6 +21,24 @@
 
 #define RUN_SEQUENTIAL 0
 
+const static signed char NEED_2_OR_3 = 0b00110000;
+const static signed char NEED_3 = 0b00010000;
+
+
+//#load the masks
+//for i = 1 to ncells:   
+//   if even[i] < 0:
+//      odd[i] = 00110000 # a live cell needs 2 or 3 left shifts
+//   else:
+//      odd[i] = 00010000 # a dead cell needs 3 left shifts
+//
+//# Shift the masks
+//for i = 1 to ncells:
+//   if even[i] < 0:
+//      for j in neighborsOf(i):
+//         odd[j] <<= 1
+
+
 /*****************************************************************************
  * Game of life implementation
  ****************************************************************************/
@@ -46,10 +64,10 @@ static inline void init_board(char* inboard,
     for (j = 0; j < ncols; j++) {
       if (IS_ALIVE(BOARD(inboard, i, j))) {
 
-        const int inorth = mod(i - 1, nrows);
-        const int isouth = mod(i + 1, nrows);
-        const int jwest = mod(j - 1, ncols);
-        const int jeast = mod(j + 1, ncols);
+        const int inorth = LOWBOUND(i - 1, nrows);
+        const int isouth = HIGHBOUND(i + 1, nrows);
+        const int jwest = LOWBOUND(j - 1, ncols);
+        const int jeast = HIGHBOUND(j + 1, ncols);
         INCR(inboard, inorth, jwest);
         INCR(inboard, inorth, j);
         INCR(inboard, inorth, jeast);
@@ -69,11 +87,18 @@ char* parallel_game_of_life(char* outboard, char* inboard,
   init_board(inboard, nrows, ncols);
 
   int curgen, i, j, i_rows_per_thread;
+  
+//  const int narray = nrows * ncols;
+//  signed char* odd_gen;
+//  signed char* even_gen;
+//  
+//  odd_gen = (signed char*)malloc(narray * sizeof (signed char));
+//  even_gen = (signed char*)malloc(narray * sizeof (signed char));
 
-  pthread_t* threads = malloc(NUM_THREADS * sizeof (pthread_t));
-  ThreadArgs* targs = malloc(NUM_THREADS * sizeof (ThreadArgs));
-  ThreadArgs* targs_firsts = malloc(NUM_THREADS * sizeof (ThreadArgs));
-  ThreadArgs* targs_lasts = malloc(NUM_THREADS * sizeof (ThreadArgs));
+  pthread_t* threads = (pthread_t*)malloc(NUM_THREADS * sizeof (pthread_t));
+  ThreadArgs* targs = (ThreadArgs*)malloc(NUM_THREADS * sizeof (ThreadArgs));
+  ThreadArgs* targs_firsts = (ThreadArgs*)malloc(NUM_THREADS * sizeof (ThreadArgs));
+  ThreadArgs* targs_lasts = (ThreadArgs*)malloc(NUM_THREADS * sizeof (ThreadArgs));
 
 
   const int rows_per_thread = nrows / NUM_THREADS;
@@ -167,10 +192,10 @@ void* thread_stub(void* arg) {
         if (ALIVE_SHOULD_DIE(c)) {
           DIE(BOARD(outboard, i, j));
 
-          const int inorth = mod(i - 1, nrows);
-          const int isouth = mod(i + 1, nrows);
-          const int jwest = mod(j - 1, ncols);
-          const int jeast = mod(j + 1, ncols);
+          const int inorth = LOWBOUND(i - 1, nrows);
+          const int isouth = HIGHBOUND(i + 1, nrows);
+          const int jwest = LOWBOUND(j - 1, ncols);
+          const int jeast = HIGHBOUND(j + 1, ncols);
 
           DECR(outboard, inorth, jwest);
           DECR(outboard, inorth, j);
@@ -185,10 +210,10 @@ void* thread_stub(void* arg) {
         if (DEAD_SHOULD_LIVE(c)) {
           LIVE(BOARD(outboard, i, j));
 
-          const int inorth = mod(i - 1, nrows);
-          const int isouth = mod(i + 1, nrows);
-          const int jwest = mod(j - 1, ncols);
-          const int jeast = mod(j + 1, ncols);
+          const int inorth = LOWBOUND(i - 1, nrows);
+          const int isouth = HIGHBOUND(i + 1, nrows);
+          const int jwest = LOWBOUND(j - 1, ncols);
+          const int jeast = HIGHBOUND(j + 1, ncols);
 
           INCR(outboard, inorth, jwest);
           INCR(outboard, inorth, j);
