@@ -31,7 +31,6 @@
  ****************************************************************************/
 
 #define NUM_THREADS 4
-#define NUM_THREADS_1 3 // NUM_TRHEADS - 1
 
 typedef struct thread_arguments {
   char* outboard;
@@ -88,6 +87,7 @@ thread_worker(void* args_){
 
     const char neighborCnt = n + s + tbc + tbn + tbs;
     destiny = alivep(neighborCnt, c);
+    //if (destiny != c)
     BOARD(outboard, nrows_1, j) = destiny;
 
     for (i = 1; i < nrows; i++) // will write up to nrows-1
