@@ -46,4 +46,9 @@ Tried loop unrolling to 3 stages, time jumped to ~12s
 512 = 11.09 (2.33)
 128 = 0.32  (5.06)
 
-
+PARALLEL sliding window
+~~~~~~~~~~~~~~~~~~~~~~~~
+Parallelize with NUM_THREADS, assign block or rows to each thread_worker
+1k  = 11.3 (9.81)
+512 = 3.22 (8.02)
+128 = 0.66 (2.45)
