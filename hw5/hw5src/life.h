@@ -33,20 +33,10 @@ char* sequential_game_of_life(char* outboard, char* inboard,
  *  
  */
 char* parallel_game_of_life(char* outboard, char* inboard,
-        const int nrows, const int ncols, const int gens_max);
+        const int size, const int gens_max);
 
-#define NUM_THREADS 4
-
-typedef struct ThreadArgs {
-  char * outboard;
-  char * inboard;
-  int nrows;
-  int ncols;
-  int first_row;
-  int last_row;
-} ThreadArgs;
 
 void* thread_stub(void* arg);
-void* thread_stub_single_row(void* arg);
+//void* thread_stub_single_row(void* arg);
 
 #endif /* _life_h */
