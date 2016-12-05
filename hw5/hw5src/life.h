@@ -47,5 +47,6 @@ typedef struct ThreadArgs {
 } ThreadArgs;
 
 void* thread_stub(void* arg);
+void* thread_stub_single_row(void* arg);
 
 #endif /* _life_h */

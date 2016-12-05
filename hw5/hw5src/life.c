@@ -38,7 +38,6 @@ const static signed char NEED_3 = 0b00010000;
 //      for j in neighborsOf(i):
 //         odd[j] <<= 1
 
-
 /*****************************************************************************
  * Game of life implementation
  ****************************************************************************/
@@ -56,12 +55,13 @@ game_of_life(char* outboard, char* inboard,
     return parallel_game_of_life(outboard, inboard, nrows, ncols, gens_max);
 }
 
-static inline void init_board(char* inboard,
-  const int nrows, const int ncols) {
+char* parallel_game_of_life(char* outboard, char* inboard,
+  const int nrows, const int ncols, const int gens_max) {
 
-  int i, j;
-  for (i = 0; i < nrows; i++) {
-    for (j = 0; j < ncols; j++) {
+  int curgen, i, j, i_rows_per_thread;
+
+  for (j = 0; j < ncols; j++)
+    for (i = 0; i < nrows; i++) {
       if (IS_ALIVE(BOARD(inboard, i, j))) {
 
         const int inorth = LOWBOUND(i - 1, nrows);
@@ -78,27 +78,19 @@ static inline void init_board(char* inboard,
         INCR(inboard, isouth, jeast);
       }
     }
-  }
-}
 
-char* parallel_game_of_life(char* outboard, char* inboard,
-  const int nrows, const int ncols, const int gens_max) {
 
-  init_board(inboard, nrows, ncols);
+  //  const int narray = nrows * ncols;
+  //  signed char* odd_gen;
+  //  signed char* even_gen;
+  //  
+  //  odd_gen = (signed char*)malloc(narray * sizeof (signed char));
+  //  even_gen = (signed char*)malloc(narray * sizeof (signed char));
 
-  int curgen, i, j, i_rows_per_thread;
-  
-//  const int narray = nrows * ncols;
-//  signed char* odd_gen;
-//  signed char* even_gen;
-//  
-//  odd_gen = (signed char*)malloc(narray * sizeof (signed char));
-//  even_gen = (signed char*)malloc(narray * sizeof (signed char));
-
-  pthread_t* threads = (pthread_t*)malloc(NUM_THREADS * sizeof (pthread_t));
-  ThreadArgs* targs = (ThreadArgs*)malloc(NUM_THREADS * sizeof (ThreadArgs));
-  ThreadArgs* targs_firsts = (ThreadArgs*)malloc(NUM_THREADS * sizeof (ThreadArgs));
-  ThreadArgs* targs_lasts = (ThreadArgs*)malloc(NUM_THREADS * sizeof (ThreadArgs));
+  pthread_t* threads = (pthread_t*) malloc(NUM_THREADS * sizeof (pthread_t));
+  ThreadArgs* targs = (ThreadArgs*) malloc(NUM_THREADS * sizeof (ThreadArgs));
+  ThreadArgs* targs_firsts = (ThreadArgs*) malloc(NUM_THREADS * sizeof (ThreadArgs));
+  ThreadArgs* targs_lasts = (ThreadArgs*) malloc(NUM_THREADS * sizeof (ThreadArgs));
 
 
   const int rows_per_thread = nrows / NUM_THREADS;
@@ -131,7 +123,7 @@ char* parallel_game_of_life(char* outboard, char* inboard,
     for (i = 0; i < NUM_THREADS; i++) {
       targs_firsts[i].inboard = inboard;
       targs_firsts[i].outboard = outboard;
-      pthread_create(&threads[i], NULL, thread_stub, (void*) &targs_firsts[i]);
+      pthread_create(&threads[i], NULL, thread_stub_single_row, (void*) &targs_firsts[i]);
     }
     for (i = 0; i < NUM_THREADS; i++)
       pthread_join(threads[i], NULL);
@@ -142,7 +134,7 @@ char* parallel_game_of_life(char* outboard, char* inboard,
     for (i = 0; i < NUM_THREADS; i++) {
       targs_lasts[i].inboard = inboard;
       targs_lasts[i].outboard = outboard;
-      pthread_create(&threads[i], NULL, thread_stub, (void*) &targs_lasts[i]);
+      pthread_create(&threads[i], NULL, thread_stub_single_row, (void*) &targs_lasts[i]);
     }
     for (i = 0; i < NUM_THREADS; i++)
       pthread_join(threads[i], NULL);
@@ -185,8 +177,8 @@ void* thread_stub(void* arg) {
 
   int i, j;
 
-  for (i = first_row; i < last_row; i++) {
-    for (j = 0; j < ncols; j++) {
+  for (j = 0; j < ncols; j++)
+    for (i = first_row; i < last_row; i++) {
       const char c = BOARD(inboard, i, j);
       if (IS_ALIVE(c)) {
         if (ALIVE_SHOULD_DIE(c)) {
@@ -226,9 +218,62 @@ void* thread_stub(void* arg) {
         }
       }
     }
-  }
+
 
   pthread_exit(NULL);
 }
 
+void* thread_stub_single_row(void* arg) {
 
+  ThreadArgs* targ = (ThreadArgs*) arg;
+  char * outboard = targ -> outboard;
+  char * inboard = targ -> inboard;
+  const int nrows = targ -> nrows;
+  const int ncols = targ -> ncols;
+  const int first_row = targ -> first_row;
+  int i, j;
+
+  for (j = 0, i = first_row; j < ncols; j++) {
+    const char c = BOARD(inboard, i, j);
+    if (IS_ALIVE(c)) {
+      if (ALIVE_SHOULD_DIE(c)) {
+        DIE(BOARD(outboard, i, j));
+
+        const int inorth = LOWBOUND(i - 1, nrows);
+        const int isouth = HIGHBOUND(i + 1, nrows);
+        const int jwest = LOWBOUND(j - 1, ncols);
+        const int jeast = HIGHBOUND(j + 1, ncols);
+
+        DECR(outboard, inorth, jwest);
+        DECR(outboard, inorth, j);
+        DECR(outboard, inorth, jeast);
+        DECR(outboard, i, jwest);
+        DECR(outboard, i, jeast);
+        DECR(outboard, isouth, jwest);
+        DECR(outboard, isouth, j);
+        DECR(outboard, isouth, jeast);
+      }
+    } else {
+      if (DEAD_SHOULD_LIVE(c)) {
+        LIVE(BOARD(outboard, i, j));
+
+        const int inorth = LOWBOUND(i - 1, nrows);
+        const int isouth = HIGHBOUND(i + 1, nrows);
+        const int jwest = LOWBOUND(j - 1, ncols);
+        const int jeast = HIGHBOUND(j + 1, ncols);
+
+        INCR(outboard, inorth, jwest);
+        INCR(outboard, inorth, j);
+        INCR(outboard, inorth, jeast);
+        INCR(outboard, i, jwest);
+        INCR(outboard, i, jeast);
+        INCR(outboard, isouth, jwest);
+        INCR(outboard, isouth, j);
+        INCR(outboard, isouth, jeast);
+      }
+    }
+  }
+
+
+  pthread_exit(NULL);
+}
