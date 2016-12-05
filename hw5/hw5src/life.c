@@ -19,7 +19,7 @@
 
 #define BOARD( __board, __i, __j )  (__board[(__i) + nrows*(__j)])
 
-#define RUN_SEQUENTIAL 1
+#define RUN_SEQUENTIAL 0
 
 /*****************************************************************************
  * Game of life implementation
@@ -31,55 +31,11 @@ game_of_life(char* outboard, char* inboard,
 #if RUN_SEQUENTIAL
   return sequential_game_of_life(outboard, inboard, nrows, ncols, gens_max);
 #endif
-  
+
   if ((nrows < 32) || (nrows != ncols) || (nrows % 4) || (nrows > 10000))
     return sequential_game_of_life(outboard, inboard, nrows, ncols, gens_max);
   else
     return parallel_game_of_life(outboard, inboard, nrows, ncols, gens_max);
-}
-
-static inline void cell_destiny(char* outboard, char* inboard,
-  const int nrows, const int ncols, const int i, const int j) {
-
-  const char c = BOARD(inboard, i, j);
-  if (IS_ALIVE(c)) {
-    if (ALIVE_SHOULD_DIE(c)) {
-      DIE(BOARD(outboard, i, j));
-
-      const int inorth = mod(i - 1, nrows);
-      const int isouth = mod(i + 1, nrows);
-      const int jwest = mod(j - 1, ncols);
-      const int jeast = mod(j + 1, ncols);
-
-      DECR(outboard, inorth, jwest);
-      DECR(outboard, inorth, j);
-      DECR(outboard, inorth, jeast);
-      DECR(outboard, i, jwest);
-      DECR(outboard, i, jeast);
-      DECR(outboard, isouth, jwest);
-      DECR(outboard, isouth, j);
-      DECR(outboard, isouth, jeast);
-    }
-  } else {
-    if (DEAD_SHOULD_LIVE(c)) {
-      LIVE(BOARD(outboard, i, j));
-
-      const int inorth = mod(i - 1, nrows);
-      const int isouth = mod(i + 1, nrows);
-      const int jwest = mod(j - 1, ncols);
-      const int jeast = mod(j + 1, ncols);
-
-      INCR(outboard, inorth, jwest);
-      INCR(outboard, inorth, j);
-      INCR(outboard, inorth, jeast);
-      INCR(outboard, i, jwest);
-      INCR(outboard, i, jeast);
-      INCR(outboard, isouth, jwest);
-      INCR(outboard, isouth, j);
-      INCR(outboard, isouth, jeast);
-    }
-  }
-
 }
 
 static inline void init_board(char* inboard,
@@ -206,7 +162,44 @@ void* thread_stub(void* arg) {
 
   for (i = first_row; i < last_row; i++) {
     for (j = 0; j < ncols; j++) {
-      cell_destiny(outboard, inboard, nrows, ncols, i, j);
+      const char c = BOARD(inboard, i, j);
+      if (IS_ALIVE(c)) {
+        if (ALIVE_SHOULD_DIE(c)) {
+          DIE(BOARD(outboard, i, j));
+
+          const int inorth = mod(i - 1, nrows);
+          const int isouth = mod(i + 1, nrows);
+          const int jwest = mod(j - 1, ncols);
+          const int jeast = mod(j + 1, ncols);
+
+          DECR(outboard, inorth, jwest);
+          DECR(outboard, inorth, j);
+          DECR(outboard, inorth, jeast);
+          DECR(outboard, i, jwest);
+          DECR(outboard, i, jeast);
+          DECR(outboard, isouth, jwest);
+          DECR(outboard, isouth, j);
+          DECR(outboard, isouth, jeast);
+        }
+      } else {
+        if (DEAD_SHOULD_LIVE(c)) {
+          LIVE(BOARD(outboard, i, j));
+
+          const int inorth = mod(i - 1, nrows);
+          const int isouth = mod(i + 1, nrows);
+          const int jwest = mod(j - 1, ncols);
+          const int jeast = mod(j + 1, ncols);
+
+          INCR(outboard, inorth, jwest);
+          INCR(outboard, inorth, j);
+          INCR(outboard, inorth, jeast);
+          INCR(outboard, i, jwest);
+          INCR(outboard, i, jeast);
+          INCR(outboard, isouth, jwest);
+          INCR(outboard, isouth, j);
+          INCR(outboard, isouth, jeast);
+        }
+      }
     }
   }
 

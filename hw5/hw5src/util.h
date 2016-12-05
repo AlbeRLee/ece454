@@ -25,6 +25,7 @@ alivep(char count, char state) {
 
 #define INCR(__board, __i, __j)  (__board[(__i) + nrows*(__j)]++)
 #define DECR(__board, __i, __j)  (__board[(__i) + nrows*(__j)]--)
+#define MOD(x, m) ((x + m) % m)
 
 /* Living and dying conditions */
 #define IS_ALIVE(x) ((x >> 4) & 0x1)
