@@ -18,10 +18,27 @@ TIMER_TYPE=USE_GETTIMEOFDAY
 # EDIT this as necessary to support your system.
 #
 USE_GCC=1
+GPROF=0
+GCOV=0
+GOfast=0
 ifeq ($(USE_GCC),1)
 	CC = gcc
 	LINKER = gcc
 	COPTFLAGS = -Wall -g -O2
+        ifeq ($(GPROF),1)
+		COPTFLAGS = -O1 -pg  #-O2 -pg
+		# run program ./gol and generate gmon.out
+		# gprof gol generates profile information
+	endif
+	ifeq ($(GCOV),1)
+		COPTFLAGS = -g -fprofile-arcs -ftest-coverage
+		# run program ./gol and generate file.gcda file.gcno for each file.o
+		# gcov -b progc generates profile output in file.c.gcov
+	endif
+        ifeq ($(GOfast),1)
+		COPTFLAGS = -O3
+	endif
+        # -O3 is slower
 else
 	CC = icc
 	LINKER = icc
