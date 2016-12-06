@@ -36,5 +36,21 @@ sequential_game_of_life(char* outboard,
         const int ncols,
         const int gens_max);
 
+/* Same output as game_of_life() above; it is actually called from inside it.
+ * This implements the parallelization of GoL using multithreading. */
+char*
+parallel_game_of_life(char* outboard,
+    char* inboard,
+    const int nrows,
+    const int ncols,
+    const int gens_max);
+
+/* Data struct and Macros for parallelization implementation are in life.c */
+
+/* Passed into threads, executes the GoL loops and board calculations.
+ * Value of the result board is in inbaord.
+ * See life.c for more details. */
+void*
+thread_worker(void* args_);
 
 #endif /* _life_h */

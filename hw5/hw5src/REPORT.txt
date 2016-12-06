@@ -1,0 +1,57 @@
+ECE454    LAB 4 REPORT    DECEMBER 6th, 2016
+
+Group:
+Taylan Gocmen    1000379949
+Gligor Djogo     1000884206
+
+
+Optimization overview:
+
+- eliminate redundant read accesses to the array; instead we stored values
+  locally and reused them across iterations (we call this 'sliding window'
+- loop peeling, where we calculated the last column element along with the first
+  column element, which allows us to only cross the 'toroidal' board boundary
+  once during an iteration of the innermost loop, thus we are not replacing the
+  cache unnecessarily often
+- reorder the loops to traverse entire columns (*Column Major Order)
+  innermost loop increments rows, outermost loop increments columns
+- loop invariant code motion, common subexpression elimination,
+  both were used to pre-calculate any constant boundary values outside of loops
+- multithreading, giving each thread a block of columns from the inner loop
+- using barrier instead of fork-join to lower the thread overhead when moving
+  on to the next generation, which needs to be synchronized to avoid dependency
+- loop unrolling innermost loop
+- reduction in strength, eliminating any modulo or 'mod' function by using the
+  ternary operator with conditions to catch the edge cases on the board
+
+
+It is evident that in this code, the main bottleneck is the nested loops which
+traverse the game board and cycle through generations. Upon profiling the code 
+with gprof and gcov, it was evident that the any small reduction in the amount
+of work inside the loops would result in significant speedups. Separately, 
+multi-threading allows parallel 
+
+Multi-threading was done by simply assigning a block of consecutive columns
+to each thread. Threads were synchronized at the end of every generation such 
+that any dependencies were avoided between generations. There was no dependency
+inside the generation, since all threads read from one game board and wrote to
+different sections of a second board.
+
+The simple parallelization strategy was selected because we estimated there
+would not be any particular area of the game board that would require excessive
+computation. We concluded this from the input game boards, which were generated
+randomly and not set up in small clusters as usual GoL boards are.
+
+Loop optimization..... 
+
+
+~~~from life.c:
+Our strategy in this GoL implementation was to utilize simple, yet effective
+optimization methods. The approach can be grouped into two areas, parallel
+multithreading and loop optimization. For the parallelization, we chose the 
+simplest strategy of block assignments, since the boards were set up randomly
+and there should not be any excessive work imbalance. We used barriers to
+cut down on overhead. As for loop optimization, we used the known techniques
+which are listed in the summary and REPORT.txt. Essentially, we noticed
+redundancy in the array accesses and opportunities to restructure the loops
+so that local variables and cache was better utilized.

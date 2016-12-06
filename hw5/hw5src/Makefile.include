@@ -36,7 +36,7 @@ ifeq ($(USE_GCC),1)
 		# gcov -b progc generates profile output in file.c.gcov
 	endif
         ifeq ($(GOfast),1)
-		COPTFLAGS = -O2
+		COPTFLAGS = -O3
 	endif
         # -O3 is slower
 else
