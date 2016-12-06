@@ -66,3 +66,11 @@ Loop unrolled the sliding window
 1k  = 4.04 (27.45)
 512 = 1.09 (23.69)
 128 = 0.12 (13.5)
+
+LOOP UNROLL x8
+~~~~~~~~~~~~~~~
+Similar to above
+1k  = 3.93 (28.2)
+512 = 1.03 (25.1)
+128 = 0.13 (12.5)
+
