@@ -2,8 +2,6 @@
 N=5
 iterations=10000
 
-> timings.out
-
 make clean all
 rm ./.times
 for i in `seq 1 $N`;
@@ -13,4 +11,3 @@ do
 done
 echo "Average real :"
 cat ./.times | grep real | sed 's/real //' | awk "{s+=\$1} END {print s/$N}"
-

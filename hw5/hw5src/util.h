@@ -22,14 +22,19 @@ alivep(char count, char state) {
   return (!state && (count == (char) 3)) ||
           (state && (count >= 2) && (count <= 3));
 }
+
+// Helpful macros.
 #define IS_ODD(x) (x & 0x1)
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) > (y) ? (y) : (x))
 
-#define INCR(__board, __i, __j)  (__board[(__i) + size*(__j)]+=1)
-#define DECR(__board, __i, __j)  (__board[(__i) + size*(__j)]-=1)
+
+// Macros for incrementing and decrementing a cell in the board.
+#define INCR(__board, __i, __j)  (__board[(__i) + size*(__j)]++)
+#define DECR(__board, __i, __j)  (__board[(__i) + size*(__j)]--)
 
 
+// Macros for incrementing or decrementing all the neighbours of a cell
 #define INCR_ALL_NEIGHBORS(board, i, j, inorth, isouth, jeast, jwest) \
 do { \
   INCR(board, inorth, jwest); \
@@ -55,12 +60,15 @@ do { \
 } while (0)
 
 
+// Macros to replace the modulus usage, keeps the value of x inbounds.
 #define MOD(x, m) ((x + m) % m)
 #define LOWBOUND(x, n) ((x == -1) ? (n - 1) : (x))
 #define HIGHBOUND(x, n) ((x == n) ? (0) : (x))
 
 
 /* Living and dying conditions */
+// A cell can have at most 8 neighbours alive, in char terms that is 0b00001000 
+// we can use the 4th bit to represent the cell 
 #define DEAD 0
 #define ALIVE 1
 #define IS_ALIVE(x) ((x >> 4) & 1)

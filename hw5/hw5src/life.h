@@ -30,13 +30,16 @@ char* sequential_game_of_life(char* outboard, char* inboard,
         const int nrows, const int ncols, const int gens_max);
 
 /**
- *  
+ * Same output as game_of_life() above, except this is parallelized.
+ * See life.c for detailed descriptions.
  */
 char* parallel_game_of_life(char* outboard, char* inboard,
         const int size, const int gens_max);
 
+// Parallelize by factor of 4, yields the best results.
 #define NUM_THREADS 4
 
+// Arguments passed to the thread.
 typedef struct ThreadArgs {
   char * outboard;
   char * inboard;
@@ -45,6 +48,7 @@ typedef struct ThreadArgs {
   int last_row;
 } ThreadArgs;
 
+// Stub functions passed to the thread.
 void* thread_stub(void* arg);
 void* thread_stub_single_row(void* arg);
 
