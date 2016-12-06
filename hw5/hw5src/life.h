@@ -40,8 +40,6 @@ char* parallel_game_of_life(char* outboard, char* inboard,
 typedef struct ThreadArgs {
   char * outboard;
   char * inboard;
-  int nrows;
-  int ncols;
   int size;
   int first_row;
   int last_row;
