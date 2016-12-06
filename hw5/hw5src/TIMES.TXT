@@ -59,3 +59,10 @@ Add barriers between generations instead of fork-join every generation
 1k  = 4.61 (24.05)
 512 = 1.21 (21.35)
 128 = 0.15 (10.8)
+
+LOOP UNROLL sliding window
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Loop unrolled the sliding window
+1k  = 4.04 (27.45)
+512 = 1.09 (23.69)
+128 = 0.12 (13.5)

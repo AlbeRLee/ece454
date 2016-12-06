@@ -66,20 +66,21 @@ thread_worker(void* args_) {
   int curgen, i, j;
   char destiny;
   char tbc, tbs, tbn, n, c, s;
-  int jwest, jeast, nrows_1, nrows_2; // jwest; //jeast;
-  nrows_1 = nrows - 1;
-  nrows_2 = nrows - 2;
-
+  int jwest, jeast;
+  int nrows_1 = nrows - 1;
+  int nrows_2 = nrows - 2;
+  int nrows_4 = nrows - 4;
+  
   for (curgen = 0; curgen < gens_max; curgen++) {
 
     // swap the iterations to have rows inside loop and cols outside
     for (j = start_col; j < end_col; j++) {
 
       // why were these const int?
-      jwest = mod(j - 1, ncols);
-      //inorth = (i-1 < 0) ? (nrows-1) : (i-1);
-      jeast = mod(j + 1, ncols);
-      //isouth = (i+1 == nrows) ? (0) : (i+1);
+      //jwest = mod(j - 1, ncols);
+      jwest = (j == 0) ? (ncols-1) : (j-1);
+      //jeast = mod(j + 1, ncols);
+      jeast = (j == ncols-1) ? (0) : (j+1);
 
       // assign the values one step ahead
       n = BOARD(inboard, nrows_2, j);
@@ -90,26 +91,59 @@ thread_worker(void* args_) {
       tbc = BOARD(inboard, nrows_1, jwest) + BOARD(inboard, nrows_1, jeast);
       tbs = BOARD(inboard, 0, jwest) + BOARD(inboard, 0, jeast);
 
-      const char neighborCnt = n + s + tbc + tbn + tbs;
-      destiny = alivep(neighborCnt, c);
-      //if (destiny != c)
+      //const char neighborCnt = (n + s + tbc + tbn + tbs);
+      destiny = alivep((n + s + tbc + tbn + tbs), c);
       BOARD(outboard, nrows_1, j) = destiny;
 
-      for (i = 1; i < nrows; i++) // will write up to nrows-1
-      {
+      for (i = 1; i < nrows_4; i += 4) { // will write up to nrows-1
+        
         // sliding window tactic, cut down the #of mem reads,
         // only read on the leading edge of 3x3 game box front
-        tbn = tbc;
-        tbc = tbs;
-        n = c;
-        c = s;
+        // also then applied loop unrolling
+        
+        tbn = tbc; tbc = tbs; n = c; c = s;
         tbs = BOARD(inboard, i, jwest) + BOARD(inboard, i, jeast);
         s = BOARD(inboard, i, j);
-
-        const char neighbor_count = n + s + tbc + tbn + tbs;
-        destiny = alivep(neighbor_count, c);
-        BOARD(outboard, i - 1, j) = destiny;
+        destiny = alivep((n + s + tbc + tbn + tbs), c);
+        BOARD(outboard, i-1, j) = destiny;
+        
+        tbn = tbc; tbc = tbs; n = c; c = s;
+        tbs = BOARD(inboard, i+1, jwest) + BOARD(inboard, i+1, jeast);
+        s = BOARD(inboard, i+1, j);
+        destiny = alivep((n + s + tbc + tbn + tbs), c);
+        BOARD(outboard, i, j) = destiny;
+        
+        tbn = tbc; tbc = tbs; n = c; c = s;
+        tbs = BOARD(inboard, i+2, jwest) + BOARD(inboard, i+2, jeast);
+        s = BOARD(inboard, i+2, j);
+        destiny = alivep((n + s + tbc + tbn + tbs), c);
+        BOARD(outboard, i+1, j) = destiny;
+        
+        tbn = tbc; tbc = tbs; n = c; c = s;
+        tbs = BOARD(inboard, i+3, jwest) + BOARD(inboard, i+3, jeast);
+        s = BOARD(inboard, i+3, j);
+        destiny = alivep((n + s + tbc + tbn + tbs), c);
+        BOARD(outboard, i+2, j) = destiny;
+        
       }
+      
+      tbn = tbc; tbc = tbs; n = c; c = s;
+      tbs = BOARD(inboard, i, jwest) + BOARD(inboard, i, jeast);
+      s = BOARD(inboard, i, j);
+      destiny = alivep((n + s + tbc + tbn + tbs), c);
+      BOARD(outboard, i-1, j) = destiny;
+
+      tbn = tbc; tbc = tbs; n = c; c = s;
+      tbs = BOARD(inboard, i+1, jwest) + BOARD(inboard, i+1, jeast);
+      s = BOARD(inboard, i+1, j);
+      destiny = alivep((n + s + tbc + tbn + tbs), c);
+      BOARD(outboard, i, j) = destiny;
+
+      tbn = tbc; tbc = tbs; n = c; c = s;
+      tbs = BOARD(inboard, i+2, jwest) + BOARD(inboard, i+2, jeast);
+      s = BOARD(inboard, i+2, j);
+      destiny = alivep((n + s + tbc + tbn + tbs), c);
+      BOARD(outboard, i+1, j) = destiny;
 
     }
 
@@ -212,3 +246,43 @@ game_of_life(char* outboard,
   else
     return parallel_game_of_life(outboard, inboard, nrows, ncols, gens_max);
 }
+
+//// swap the iterations to have rows inside loop and cols outside
+//    for (j = start_col; j < end_col; j++) {
+//
+//      // why were these const int?
+//      //jwest = mod(j - 1, ncols);
+//      jwest = (j == 0) ? (ncols-1) : (j-1);
+//      //jeast = mod(j + 1, ncols);
+//      jeast = (j == ncols-1) ? (0) : (j+1);
+//
+//      // assign the values one step ahead
+//      n = BOARD(inboard, nrows_2, j);
+//      c = BOARD(inboard, nrows_1, j);
+//      s = BOARD(inboard, 0, j);
+//
+//      tbn = BOARD(inboard, nrows_2, jwest) + BOARD(inboard, nrows_2, jeast);
+//      tbc = BOARD(inboard, nrows_1, jwest) + BOARD(inboard, nrows_1, jeast);
+//      tbs = BOARD(inboard, 0, jwest) + BOARD(inboard, 0, jeast);
+//
+//      const char neighborCnt = n + s + tbc + tbn + tbs;
+//      destiny = alivep(neighborCnt, c);
+//      BOARD(outboard, nrows_1, j) = destiny;
+//
+//      for (i = 1; i < nrows; i++) { // will write up to nrows-1
+//        
+//        // sliding window tactic, cut down the #of mem reads,
+//        // only read on the leading edge of 3x3 game box front
+//        tbn = tbc;
+//        tbc = tbs;
+//        n = c;
+//        c = s;
+//        tbs = BOARD(inboard, i, jwest) + BOARD(inboard, i, jeast);
+//        s = BOARD(inboard, i, j);
+//
+//        const char neighbor_count = n + s + tbc + tbn + tbs;
+//        destiny = alivep(neighbor_count, c);
+//        BOARD(outboard, i - 1, j) = destiny;
+//      }
+//
+//    }
