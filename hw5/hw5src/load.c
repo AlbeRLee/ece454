@@ -58,7 +58,7 @@ load_board_values(FILE* input, const int nrows, const int ncols) {
     } else {
       /* ASCII '0' is not zero; do the conversion */
       board[i] = board[i] - '0';
-      if(board[i] == 0x1)
+      if (board[i] == 0x1)
         board[i] = 0x1 << 4;
     }
   }

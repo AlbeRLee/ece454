@@ -26,7 +26,6 @@ alivep(char count, char state) {
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) > (y) ? (y) : (x))
 
-// TODO: see if these are better with ++ or +=1
 #define INCR(__board, __i, __j)  (__board[(__i) + size*(__j)]+=1)
 #define DECR(__board, __i, __j)  (__board[(__i) + size*(__j)]-=1)
 
@@ -61,7 +60,7 @@ do { \
 #define HIGHBOUND(x, n) ((x == n) ? (0) : (x))
 
 
-  /* Living and dying conditions */
+/* Living and dying conditions */
 #define DEAD 0
 #define ALIVE 1
 #define IS_ALIVE(x) ((x >> 4) & 1)
