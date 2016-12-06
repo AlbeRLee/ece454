@@ -33,7 +33,7 @@ char* sequential_game_of_life(char* outboard, char* inboard,
  *  
  */
 char* parallel_game_of_life(char* outboard, char* inboard,
-        const int nrows, const int ncols, const int gens_max);
+        const int size, const int gens_max);
 
 #define NUM_THREADS 4
 
@@ -42,6 +42,7 @@ typedef struct ThreadArgs {
   char * inboard;
   int nrows;
   int ncols;
+  int size;
   int first_row;
   int last_row;
 } ThreadArgs;

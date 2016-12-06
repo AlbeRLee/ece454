@@ -17,32 +17,14 @@
   b2 = temp; \
 } while(0)
 
-#define BOARD( __board, __i, __j )  (__board[(__i) + nrows*(__j)])
+#define BOARD( __board, __i, __j )  (__board[(__i) + size*(__j)])
 
 #define RUN_SEQUENTIAL 0
-
-const static signed char NEED_2_OR_3 = 0b00110000;
-const static signed char NEED_3 = 0b00010000;
-
-
-//#load the masks
-//for i = 1 to ncells:   
-//   if even[i] < 0:
-//      odd[i] = 00110000 # a live cell needs 2 or 3 left shifts
-//   else:
-//      odd[i] = 00010000 # a dead cell needs 3 left shifts
-//
-//# Shift the masks
-//for i = 1 to ncells:
-//   if even[i] < 0:
-//      for j in neighborsOf(i):
-//         odd[j] <<= 1
 
 /*****************************************************************************
  * Game of life implementation
  ****************************************************************************/
-char*
-game_of_life(char* outboard, char* inboard,
+char* game_of_life(char* outboard, char* inboard,
   const int nrows, const int ncols, const int gens_max) {
 
 #if RUN_SEQUENTIAL
@@ -52,48 +34,36 @@ game_of_life(char* outboard, char* inboard,
   if ((nrows < 32) || (nrows != ncols) || (nrows % 4) || (nrows > 10000))
     return sequential_game_of_life(outboard, inboard, nrows, ncols, gens_max);
   else
-    return parallel_game_of_life(outboard, inboard, nrows, ncols, gens_max);
+    return parallel_game_of_life(outboard, inboard, nrows, gens_max);
 }
 
 char* parallel_game_of_life(char* outboard, char* inboard,
-  const int nrows, const int ncols, const int gens_max) {
+  const int size, const int gens_max) {
 
   int curgen, i, j, i_rows_per_thread;
 
-  for (j = 0; j < ncols; j++)
-    for (i = 0; i < nrows; i++) {
+  for (j = 0; j < size; j++) {
+    const int jwest = LOWBOUND(j - 1, size);
+    const int jeast = HIGHBOUND(j + 1, size);
+    for (i = 0; i < size; i++) {
       if (IS_ALIVE(BOARD(inboard, i, j))) {
 
-        const int inorth = LOWBOUND(i - 1, nrows);
-        const int isouth = HIGHBOUND(i + 1, nrows);
-        const int jwest = LOWBOUND(j - 1, ncols);
-        const int jeast = HIGHBOUND(j + 1, ncols);
-        INCR(inboard, inorth, jwest);
-        INCR(inboard, inorth, j);
-        INCR(inboard, inorth, jeast);
-        INCR(inboard, i, jwest);
-        INCR(inboard, i, jeast);
-        INCR(inboard, isouth, jwest);
-        INCR(inboard, isouth, j);
-        INCR(inboard, isouth, jeast);
+        const int inorth = LOWBOUND(i - 1, size);
+        const int isouth = HIGHBOUND(i + 1, size);
+
+        INCR_ALL_NEIGHBORS(inboard, i, j, inorth, isouth, jeast, jwest);
       }
     }
+  }
+
+  pthread_t threads[NUM_THREADS];
+  ThreadArgs targs[NUM_THREADS];
+  ThreadArgs targs_firsts[NUM_THREADS];
+  ThreadArgs targs_lasts[NUM_THREADS];
 
 
-  //  const int narray = nrows * ncols;
-  //  signed char* odd_gen;
-  //  signed char* even_gen;
-  //  
-  //  odd_gen = (signed char*)malloc(narray * sizeof (signed char));
-  //  even_gen = (signed char*)malloc(narray * sizeof (signed char));
-
-  pthread_t* threads = (pthread_t*) malloc(NUM_THREADS * sizeof (pthread_t));
-  ThreadArgs* targs = (ThreadArgs*) malloc(NUM_THREADS * sizeof (ThreadArgs));
-  ThreadArgs* targs_firsts = (ThreadArgs*) malloc(NUM_THREADS * sizeof (ThreadArgs));
-  ThreadArgs* targs_lasts = (ThreadArgs*) malloc(NUM_THREADS * sizeof (ThreadArgs));
-
-
-  const int rows_per_thread = nrows / NUM_THREADS;
+  const int rows_per_thread = size / NUM_THREADS;
+  const int array_size = size * size;
 
   for (i = 0, i_rows_per_thread = 0; i < NUM_THREADS; i++) {
 
@@ -107,18 +77,14 @@ char* parallel_game_of_life(char* outboard, char* inboard,
     targs_lasts[i].first_row = i_rows_per_thread - 1;
     targs_lasts[i].last_row = i_rows_per_thread;
 
-    targs[i].nrows = nrows;
-    targs_firsts[i].nrows = nrows;
-    targs_lasts[i].nrows = nrows;
-
-    targs[i].ncols = ncols;
-    targs_firsts[i].ncols = ncols;
-    targs_lasts[i].ncols = ncols;
+    targs[i].size = size;
+    targs_firsts[i].size = size;
+    targs_lasts[i].size = size;
   }
 
   for (curgen = 0; curgen < gens_max; curgen++) {
 
-    memmove(outboard, inboard, nrows * ncols * sizeof (char));
+    memmove(outboard, inboard, array_size * sizeof (char));
 
     for (i = 0; i < NUM_THREADS; i++) {
       targs_firsts[i].inboard = inboard;
@@ -128,9 +94,6 @@ char* parallel_game_of_life(char* outboard, char* inboard,
     for (i = 0; i < NUM_THREADS; i++)
       pthread_join(threads[i], NULL);
 
-
-
-
     for (i = 0; i < NUM_THREADS; i++) {
       targs_lasts[i].inboard = inboard;
       targs_lasts[i].outboard = outboard;
@@ -138,9 +101,6 @@ char* parallel_game_of_life(char* outboard, char* inboard,
     }
     for (i = 0; i < NUM_THREADS; i++)
       pthread_join(threads[i], NULL);
-
-
-
 
     for (i = 0; i < NUM_THREADS; i++) {
       targs[i].inboard = inboard;
@@ -154,14 +114,12 @@ char* parallel_game_of_life(char* outboard, char* inboard,
     SWAP_BOARDS(outboard, inboard);
   }
 
-  for (i = 0; i < nrows; i++) {
-    for (j = 0; j < ncols; j++) {
+  for (j = 0; j < size; j++) {
+    for (i = 0; i < size; i++) {
       BOARD(inboard, i, j) = IS_ALIVE(BOARD(inboard, i, j));
     }
   }
 
-  free(threads);
-  free(targs);
   return inboard;
 }
 
@@ -170,55 +128,35 @@ void* thread_stub(void* arg) {
   ThreadArgs* targ = (ThreadArgs*) arg;
   char * outboard = targ -> outboard;
   char * inboard = targ -> inboard;
-  const int nrows = targ -> nrows;
-  const int ncols = targ -> ncols;
+  const int size = targ -> size;
   const int first_row = targ -> first_row;
   const int last_row = targ -> last_row;
 
   int i, j;
 
-  for (j = 0; j < ncols; j++)
+  for (j = 0; j < size; j++) {
+    const int jwest = LOWBOUND(j - 1, size);
+    const int jeast = HIGHBOUND(j + 1, size);
+
     for (i = first_row; i < last_row; i++) {
       const char c = BOARD(inboard, i, j);
       if (IS_ALIVE(c)) {
         if (ALIVE_SHOULD_DIE(c)) {
           DIE(BOARD(outboard, i, j));
-
-          const int inorth = LOWBOUND(i - 1, nrows);
-          const int isouth = HIGHBOUND(i + 1, nrows);
-          const int jwest = LOWBOUND(j - 1, ncols);
-          const int jeast = HIGHBOUND(j + 1, ncols);
-
-          DECR(outboard, inorth, jwest);
-          DECR(outboard, inorth, j);
-          DECR(outboard, inorth, jeast);
-          DECR(outboard, i, jwest);
-          DECR(outboard, i, jeast);
-          DECR(outboard, isouth, jwest);
-          DECR(outboard, isouth, j);
-          DECR(outboard, isouth, jeast);
+          const int inorth = LOWBOUND(i - 1, size);
+          const int isouth = HIGHBOUND(i + 1, size);
+          DECR_ALL_NEIGHBORS(outboard, i, j, inorth, isouth, jeast, jwest);
         }
       } else {
         if (DEAD_SHOULD_LIVE(c)) {
           LIVE(BOARD(outboard, i, j));
-
-          const int inorth = LOWBOUND(i - 1, nrows);
-          const int isouth = HIGHBOUND(i + 1, nrows);
-          const int jwest = LOWBOUND(j - 1, ncols);
-          const int jeast = HIGHBOUND(j + 1, ncols);
-
-          INCR(outboard, inorth, jwest);
-          INCR(outboard, inorth, j);
-          INCR(outboard, inorth, jeast);
-          INCR(outboard, i, jwest);
-          INCR(outboard, i, jeast);
-          INCR(outboard, isouth, jwest);
-          INCR(outboard, isouth, j);
-          INCR(outboard, isouth, jeast);
+          const int inorth = LOWBOUND(i - 1, size);
+          const int isouth = HIGHBOUND(i + 1, size);
+          INCR_ALL_NEIGHBORS(outboard, i, j, inorth, isouth, jeast, jwest);
         }
       }
     }
-
+  }
 
   pthread_exit(NULL);
 }
@@ -228,52 +166,30 @@ void* thread_stub_single_row(void* arg) {
   ThreadArgs* targ = (ThreadArgs*) arg;
   char * outboard = targ -> outboard;
   char * inboard = targ -> inboard;
-  const int nrows = targ -> nrows;
-  const int ncols = targ -> ncols;
+  const int size = targ -> size;
   const int first_row = targ -> first_row;
-  int i, j;
+  int j;
 
-  for (j = 0, i = first_row; j < ncols; j++) {
+  const int i = first_row;
+  const int inorth = LOWBOUND(i - 1, size);
+  const int isouth = HIGHBOUND(i + 1, size);
+
+  for (j = 0; j < size; j++) {
+    const int jwest = LOWBOUND(j - 1, size);
+    const int jeast = HIGHBOUND(j + 1, size);
     const char c = BOARD(inboard, i, j);
     if (IS_ALIVE(c)) {
       if (ALIVE_SHOULD_DIE(c)) {
         DIE(BOARD(outboard, i, j));
-
-        const int inorth = LOWBOUND(i - 1, nrows);
-        const int isouth = HIGHBOUND(i + 1, nrows);
-        const int jwest = LOWBOUND(j - 1, ncols);
-        const int jeast = HIGHBOUND(j + 1, ncols);
-
-        DECR(outboard, inorth, jwest);
-        DECR(outboard, inorth, j);
-        DECR(outboard, inorth, jeast);
-        DECR(outboard, i, jwest);
-        DECR(outboard, i, jeast);
-        DECR(outboard, isouth, jwest);
-        DECR(outboard, isouth, j);
-        DECR(outboard, isouth, jeast);
+        DECR_ALL_NEIGHBORS(outboard, i, j, inorth, isouth, jeast, jwest);
       }
     } else {
       if (DEAD_SHOULD_LIVE(c)) {
         LIVE(BOARD(outboard, i, j));
-
-        const int inorth = LOWBOUND(i - 1, nrows);
-        const int isouth = HIGHBOUND(i + 1, nrows);
-        const int jwest = LOWBOUND(j - 1, ncols);
-        const int jeast = HIGHBOUND(j + 1, ncols);
-
-        INCR(outboard, inorth, jwest);
-        INCR(outboard, inorth, j);
-        INCR(outboard, inorth, jeast);
-        INCR(outboard, i, jwest);
-        INCR(outboard, i, jeast);
-        INCR(outboard, isouth, jwest);
-        INCR(outboard, isouth, j);
-        INCR(outboard, isouth, jeast);
+        INCR_ALL_NEIGHBORS(outboard, i, j, inorth, isouth, jeast, jwest);
       }
     }
   }
-
 
   pthread_exit(NULL);
 }
